@@ -29,10 +29,23 @@ export async function POST(request: Request) {
     try {
       const repository = await getContentRepository();
       const posts = repository
-        ? (await repository.listPosts()).filter((post) => post.campaignId === campaignId)
-        : Array.from(contentStore.posts.values()).filter((p) => p.campaignId === campaignId);
-      const metrics = repository ? await repository.listMetrics() : Array.from(contentStore.metrics.values());
-      if (!posts.length || !metrics.length) return NextResponse.json({ error: "Publish posts and ingest metrics before generating insights." }, { status: 409 });
+        ? (await repository.listPosts()).filter(
+            (post) => post.campaignId === campaignId,
+          )
+        : Array.from(contentStore.posts.values()).filter(
+            (p) => p.campaignId === campaignId,
+          );
+      const metrics = repository
+        ? await repository.listMetrics()
+        : Array.from(contentStore.metrics.values());
+      if (!posts.length || !metrics.length)
+        return NextResponse.json(
+          {
+            error:
+              "Publish posts and ingest metrics before generating insights.",
+          },
+          { status: 409 },
+        );
 
       const promptStr = insightsPrompt(posts, metrics);
       const aiResult = await generateWithFallback<InsightGen[]>(
@@ -47,7 +60,9 @@ export async function POST(request: Request) {
         type: item.type,
         claim: item.claim,
         recommendation: item.recommendation,
-        sourcePostIds: (item.sourcePostIds || []).filter((id) => posts.some((post) => post.id === id)),
+        sourcePostIds: (item.sourcePostIds || []).filter((id) =>
+          posts.some((post) => post.id === id),
+        ),
         createdAt: new Date().toISOString(),
       }));
 

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const input = await body(request);
   const postId = String(input.postId ?? "");
   const repository = await getContentRepository();
-  const post = (await repository?.getPost(postId)) ?? getPost(postId);
+  const post = getPost(postId) ?? (await repository?.getPost(postId));
   if (!post) return jsonError("Post not found.", 404);
   const creativePrompt = String(input.creativePrompt ?? post.creativePrompt);
   const imageData =
@@ -95,7 +95,21 @@ export async function POST(request: Request) {
     .data.publicUrl;
   const updatedPost = { ...post, creativeUrl: publicUrl, creativePrompt };
   contentStore.posts.set(post.id, updatedPost);
-  if (repository) await repository.savePost(updatedPost);
+  if (repository) {
+    try {
+      await repository.savePost(updatedPost);
+    } catch (error) {
+      console.error("Creative URL persistence failed", error);
+      return NextResponse.json(
+        {
+          error:
+            "Image uploaded, but posts.creative_url could not be persisted.",
+          detail: String(error),
+        },
+        { status: 502 },
+      );
+    }
+  }
   return NextResponse.json({
     post: updatedPost,
     status: "stored",

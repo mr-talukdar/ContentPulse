@@ -51,6 +51,12 @@ const toneText: Record<string, string> = {
 const inputClass =
   "w-full border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm text-zinc-100 outline-none transition focus:border-red-500";
 const panelClass = "border border-zinc-800 bg-zinc-950/70 p-5";
+type CreativeResponse = {
+  error?: string;
+  details?: string[];
+  imageData?: string;
+  creativeUrl?: string;
+};
 const generationMessages = [
   "Reading the brief... গল্পটা বুঝে নিচ্ছি...",
   "Building the story spine... গল্পের কাঠামো বানাচ্ছি...",
@@ -68,18 +74,21 @@ function Button({
   disabled = false,
   onClick,
   type = "button",
+  title,
 }: {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
   onClick?: () => void;
   type?: "button" | "submit";
+  title?: string;
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
+      title={title}
       className={`border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${className}`}>
       {children}
     </button>
@@ -157,6 +166,23 @@ function PostCard({
   const [creativeError, setCreativeError] = useState("");
   const triggeredPostIdRef = useRef<string | null>(null);
 
+  async function readJsonResponse(
+    response: Response,
+  ): Promise<CreativeResponse> {
+    const text = await response.text();
+    if (!text)
+      return {
+        error: `Server returned an empty response (${response.status}).`,
+      };
+    try {
+      return JSON.parse(text) as CreativeResponse;
+    } catch {
+      return {
+        error: `Server returned an invalid response (${response.status}).`,
+      };
+    }
+  }
+
   const generateCreative = useCallback(async () => {
     setCreativeBusy(true);
     setCreativeError("");
@@ -166,7 +192,7 @@ function PostCard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ postId: post.id }),
       });
-      const generated = await generationResponse.json();
+      const generated = await readJsonResponse(generationResponse);
       if (!generationResponse.ok || !generated.imageData) {
         throw new Error(
           generated.details?.[0] ??
@@ -186,7 +212,7 @@ function PostCard({
           imageData: generated.imageData,
         }),
       });
-      const stored = await storageResponse.json();
+      const stored = await readJsonResponse(storageResponse);
       if (!storageResponse.ok || !stored.creativeUrl) {
         setCreativeError("Visual generated, but Storage persistence failed.");
         return;
@@ -600,6 +626,24 @@ export function StudioWorkspace() {
   }
   return (
     <div className="space-y-8">
+      {posts.length > 0 && (
+        <div className="flex items-center justify-between border border-blue-500/30 bg-blue-500/10 p-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-300">
+              Next step
+            </p>
+            <p className="mt-1 text-sm text-blue-100">
+              Your generated posts are ready for human review.
+            </p>
+          </div>
+          <Button
+            disabled={commitBusy}
+            onClick={proceedToApproval}
+            className="border-blue-400 bg-blue-500 text-white">
+            {commitBusy ? "Saving campaign..." : "Proceed to Approval Queue →"}
+          </Button>
+        </div>
+      )}
       <form
         onSubmit={generate}
         className="grid min-w-0 gap-5 lg:grid-cols-[minmax(270px,320px)_minmax(0,1fr)]">
@@ -724,16 +768,6 @@ export function StudioWorkspace() {
                 />
               ))}
             </div>
-          )}
-          {posts.length > 0 && (
-            <Button
-              disabled={commitBusy}
-              onClick={proceedToApproval}
-              className="border-blue-500 bg-blue-500/10 px-4 py-3 text-blue-200">
-              {commitBusy
-                ? "Saving campaign..."
-                : "Proceed to Approval Queue →"}
-            </Button>
           )}
         </section>
       </form>
@@ -1136,6 +1170,15 @@ export function ApprovalWorkspace() {
 
 export function PublisherWorkspace() {
   const [items, setItems] = useState(demoPosts);
+  const [busyId, setBusyId] = useState("");
+  const [schedulingId, setSchedulingId] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState(() => {
+    const d = new Date();
+    d.setHours(d.getHours() + 2);
+    return d.toISOString().slice(0, 16);
+  });
+  const [publishErrors, setPublishErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
     fetch("/api/posts")
       .then((response) => response.json())
@@ -1144,15 +1187,64 @@ export function PublisherWorkspace() {
           setItems(result.posts);
       });
   }, []);
-  async function publish(post: GeneratedPost) {
-    const result = await fetch(`/api/posts/${post.id}/publish`, {
-      method: "POST",
-    }).then((res) => res.json());
-    if (result.post)
-      setItems((current) =>
-        current.map((item) => (item.id === post.id ? result.post : item)),
-      );
+
+  async function schedule(post: GeneratedPost, targetDate?: string) {
+    setBusyId(post.id);
+    const dateToSchedule = targetDate
+      ? new Date(targetDate).toISOString()
+      : new Date().toISOString();
+    try {
+      const response = await fetch(`/api/posts/${post.id}/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduledAt: dateToSchedule }),
+      });
+      const result = await response.json();
+      const updated = result.post ?? result;
+      if (updated?.id || response.ok) {
+        setItems((current) =>
+          current.map((item) =>
+            item.id === post.id
+              ? { ...item, status: "scheduled", scheduledAt: dateToSchedule }
+              : item,
+          ),
+        );
+      }
+    } finally {
+      setBusyId("");
+      setSchedulingId(null);
+    }
   }
+
+  async function publish(post: GeneratedPost) {
+    setBusyId(post.id);
+    setPublishErrors((current) => ({ ...current, [post.id]: "" }));
+    try {
+      const response = await fetch(`/api/posts/${post.id}/publish`, {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (result.post) {
+        setItems((current) =>
+          current.map((item) => (item.id === post.id ? result.post : item)),
+        );
+      } else if (result.error || result.validation) {
+        const errorMsg =
+          result.validation?.errors?.map((e: { message: string }) => e.message).join(", ") ??
+          result.error ??
+          "Validation failed";
+        setPublishErrors((current) => ({ ...current, [post.id]: errorMsg }));
+      }
+    } catch (err) {
+      setPublishErrors((current) => ({
+        ...current,
+        [post.id]: err instanceof Error ? err.message : "Publishing failed",
+      }));
+    } finally {
+      setBusyId("");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className={`${panelClass} border-blue-500/30`}>
@@ -1191,6 +1283,16 @@ export function PublisherWorkspace() {
                         {post.id}
                       </code>
                     </div>
+                    {post.creativeUrl && (
+                      <Image
+                        src={post.creativeUrl}
+                        alt={post.title ?? "Creative preview"}
+                        width={320}
+                        height={180}
+                        className="mt-2.5 aspect-video w-full rounded-xs border border-zinc-800 object-cover"
+                        unoptimized
+                      />
+                    )}
                     <p className="mt-3 text-xs leading-5 text-zinc-400">
                       {post.title}
                     </p>
@@ -1202,12 +1304,101 @@ export function PublisherWorkspace() {
                         ✓ {platformNames[post.platform]} adapter ready
                       </p>
                     </div>
+
+                    {/* Schedule action under Approved */}
+                    {status === "approved" && (
+                      <div className="mt-3">
+                        {schedulingId === post.id ? (
+                          <div className="space-y-2 border border-blue-500/40 bg-blue-500/10 p-2.5">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-blue-300">
+                              Publication Date & Time
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={scheduleDate}
+                              onChange={(e) => setScheduleDate(e.target.value)}
+                              className={`${inputClass} text-xs py-1 px-2 w-full`}
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                disabled={busyId === post.id}
+                                onClick={() => schedule(post, scheduleDate)}
+                                className="flex-1 border-blue-500 bg-blue-600 text-white text-xs py-1.5 hover:bg-blue-500">
+                                {busyId === post.id ? "Scheduling..." : "Confirm Schedule"}
+                              </Button>
+                              <Button
+                                onClick={() => setSchedulingId(null)}
+                                className="border-zinc-700 text-zinc-400 text-xs py-1.5 hover:bg-zinc-800">
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Button
+                              disabled={busyId === post.id}
+                              onClick={() => {
+                                const nextSlot = new Date(Date.now() + 2 * 60 * 60 * 1000)
+                                  .toISOString()
+                                  .slice(0, 16);
+                                setScheduleDate(nextSlot);
+                                setSchedulingId(post.id);
+                              }}
+                              className="flex-1 border-blue-500/60 bg-blue-500/10 text-xs py-1.5 text-blue-300 hover:bg-blue-500/20">
+                              Schedule Post ⏱
+                            </Button>
+                            <Button
+                              disabled={busyId === post.id}
+                              onClick={() => schedule(post)}
+                              title="Schedule immediately with current timestamp"
+                              className="border-zinc-700 bg-zinc-800/80 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700">
+                              Now
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Publish action under Scheduled */}
                     {status === "scheduled" && (
-                      <Button
-                        onClick={() => publish(post)}
-                        className="mt-3 w-full border-red-500 bg-red-500/10 text-red-200">
-                        Validate & Mock Publish
-                      </Button>
+                      <div className="mt-3 space-y-2">
+                        {post.scheduledAt && (
+                          <p className="text-[10px] text-blue-300 font-medium">
+                            ⏱ Scheduled: {new Date(post.scheduledAt).toLocaleString()}
+                          </p>
+                        )}
+                        <Button
+                          disabled={busyId === post.id}
+                          onClick={() => publish(post)}
+                          className="w-full border-red-500 bg-red-500/10 text-xs py-2 text-red-200 hover:bg-red-500/20">
+                          {busyId === post.id ? "Validating & Publishing..." : "Validate & Mock Publish"}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Information under Published */}
+                    {status === "published" && (
+                      <div className="mt-3 space-y-1">
+                        <p className="text-xs font-semibold text-green-400">
+                          ✓ Published successfully
+                        </p>
+                        {post.publishedAt && (
+                          <p className="text-[10px] text-zinc-400">
+                            {new Date(post.publishedAt).toLocaleString()}
+                          </p>
+                        )}
+                        {post.externalPostId && (
+                          <p className="text-[10px] font-mono text-zinc-500">
+                            External ID: {post.externalPostId}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {publishErrors[post.id] && (
+                      <p className="mt-2 text-[10px] text-red-300 bg-red-500/10 border border-red-500/30 p-1.5">
+                        {publishErrors[post.id]}
+                      </p>
                     )}
                   </article>
                 ))}

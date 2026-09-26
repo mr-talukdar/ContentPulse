@@ -1,17 +1,8 @@
 import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
+import { ContentPulseNav } from "@/components/contentpulse-nav";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-
-const navigation = [
-  ["Command Center", "/"],
-  ["Generative Studio", "/studio"],
-  ["Approval Queue", "/approval"],
-  ["Publisher", "/publisher"],
-  ["Analytics", "/analytics"],
-  ["Insights", "/insights"],
-  ["Reports", "/reports"],
-] as const;
 
 function firstName(
   user: {
@@ -55,13 +46,7 @@ export async function ContentPulseShell({
           </span>
         </Link>
         <p className="cp-label">Workspace</p>
-        <nav className="cp-nav" aria-label="ContentPulse navigation">
-          {navigation.map(([label, href]) => (
-            <Link key={href} href={href}>
-              {label}
-            </Link>
-          ))}
-        </nav>
+        <ContentPulseNav />
         <div className="cp-sidebar-status">
           <span /> Gemini + Supabase ready
           <div className="mt-3 pl-4">{user && <LogoutButton />}</div>

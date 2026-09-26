@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 export function LogoutButton() {
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   async function signOut() {
     setBusy(true);
     await createClient().auth.signOut();
-    window.location.assign("/login");
+    router.push("/login");
   }
 
   return (

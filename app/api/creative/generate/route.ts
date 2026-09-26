@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const input = await body(request);
   const postId = String(input.postId ?? "");
   const repository = await getContentRepository();
-  const post = (await repository?.getPost(postId)) ?? getPost(postId);
+  const post = getPost(postId) ?? (await repository?.getPost(postId));
   if (!post) return jsonError("Post not found.", 404);
 
   const prompt = String(input.creativePrompt ?? post.creativePrompt);

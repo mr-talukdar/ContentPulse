@@ -1,5 +1,13 @@
 # ContentPulse Implementation Progress
 
+## Current Stage
+
+**Stage: MVP workflow complete; integration verification and hardening.**
+
+The core hackathon loop is implemented: brief → platform-specific Bengali/English generation → visual generation/fallback → human approval → schedule → adapter validation → mock publish → published-post metrics → evidence-linked insights/report → editable next brief. Supabase Auth, authenticated persistence, Storage uploads, campaign commit handoff, and the Publisher pipeline are connected.
+
+The active work is verification and polish rather than core feature construction: validate Hugging Face/local visual generation in the configured environment, verify Storage URLs survive refresh, test cross-user RLS, add browser walkthrough coverage, and remove remaining demo-only assumptions from authenticated surfaces.
+
 ## Current Runtime Status
 
 - **Gemini AI Integration Complete**: `/api/generate`, `/api/posts/[id]/retry`, `/api/insights/generate`, `/api/reports/generate`, and `/api/briefs/from-insight` routes are fully wired to `utils/ai/gemini-gateway.ts` with live Gemini model routing and automatic fallback to demo fixtures if API key is missing or calls fail.
@@ -45,6 +53,9 @@
 - **Report output normalization fixed**: Added shared list normalization so report sections remain arrays even when a model returns a single string; provider names were removed from repeated user-facing workflow labels.
 - **Report download added**: Reports now offer a client-side Markdown download containing the summary, learnings, recommendations, period, and source post IDs.
 - **Insight-to-brief loop closed**: Create Next Brief now stores the generated editable brief in session state and routes to Studio, where the brief is prefilled for review and regeneration.
+- **Published-post metrics simulation added**: Metrics ingestion now derives deterministic metrics from posts with `published` status, persists them, and reports its evidence source instead of always ingesting disconnected fixtures.
+- **Evidence gates added**: Insight generation now requires published posts plus metrics; report generation requires insights plus metrics; generated source post IDs are filtered to backed evidence.
+- **Post identity collision fixed**: Live generated post IDs now include the campaign ID, and creative routes prefer the current ephemeral post before querying older Supabase rows, preventing previously generated images/prompts from being reused.
 - **README rewritten**: Replaced the original Problem 1 scaffold README with a complete current ContentPulse product, architecture, API, persistence, authentication, media, setup, demo, validation, and known-gaps guide.
 
 ## Single Source of Truth

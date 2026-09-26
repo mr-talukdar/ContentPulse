@@ -96,7 +96,7 @@ export async function POST(request: Request) {
                 : platform === "youtube"
                   ? "YT"
                   : "FB";
-            const postId = `${prefix}_${String(postCounter++).padStart(3, "0")}`;
+            const postId = `${prefix}_${campaignId}_${String(postCounter++).padStart(3, "0")}`;
 
             const post: GeneratedPost = {
               id: postId,

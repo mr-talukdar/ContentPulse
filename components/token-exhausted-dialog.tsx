@@ -8,10 +8,10 @@ export function TokenExhaustedDialog() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    function handleEvent(e: Event) {
-      const customEvent = e as CustomEvent<{ force?: boolean }>;
+    function handleEvent() {
+      // Show dialog if not already dismissed in this session
       const dismissed = sessionStorage.getItem("cp_token_dialog_dismissed");
-      if (!dismissed || customEvent?.detail?.force) {
+      if (!dismissed) {
         setOpen(true);
       }
     }
@@ -27,7 +27,7 @@ export function TokenExhaustedDialog() {
   }
 
   function handleCopyEmail() {
-    navigator.clipboard.writeText("buduman209@gmail.com");
+    navigator.clipboard.writeText("triptokanti2004@gmail.com");
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }
@@ -82,7 +82,9 @@ export function TokenExhaustedDialog() {
                   Reward the engineer who built this closed-loop AI system.
                 </li>
                 <li>
-                  <strong className="text-zinc-300">Static Demo Library:</strong>{" "}
+                  <strong className="text-zinc-300">
+                    Static Demo Library:
+                  </strong>{" "}
                   Seamlessly fallback to the 12-asset cinematic Hoichoi artwork.
                 </li>
               </ul>
@@ -125,7 +127,7 @@ export function TokenExhaustedDialog() {
                 Connect with the developer:
               </p>
               <div className="flex items-center justify-center gap-2">
-                <code className="text-red-300">buduman209@gmail.com</code>
+                <code className="text-red-300">triptokanti2004@gmail.com</code>
                 <button
                   type="button"
                   onClick={handleCopyEmail}
@@ -137,7 +139,7 @@ export function TokenExhaustedDialog() {
 
             <div className="mt-6 flex flex-col gap-2 sm:flex-row">
               <a
-                href="mailto:buduman209@gmail.com?subject=Internship%20Offer%20from%20Hoichoi%20Hackathon&body=Hi%2C%20we%20loved%20ContentPulse%20and%20want%20to%20offer%20you%20an%20internship!"
+                href="mailto:triptokanti2004@gmail.com?subject=Internship%20Offer%20from%20Hoichoi%20Hackathon&body=Hi%2C%20we%20loved%20ContentPulse%20and%20want%20to%20offer%20you%20an%20internship!"
                 className="flex-1 border border-red-500 bg-red-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-500">
                 📧 Send Email Offer
               </a>

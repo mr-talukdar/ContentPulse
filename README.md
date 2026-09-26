@@ -474,6 +474,7 @@ The current implementation has passed TypeScript and production-build validation
 - Hugging Face image generation and the local fallback need a final live verification with the configured token/model.
 - Supabase Storage and `posts.creative_url` should be rechecked after a fresh visual generation and browser refresh.
 - Cross-user ownership and RLS behavior need positive and negative tests with two accounts.
+- **Storage URL privacy shortcut:** For the hackathon demo, creative assets use public Supabase Storage URLs and paths are campaign-scoped to keep the walkthrough simple and save setup time. In a production deployment, use a private bucket, user-scoped object paths, and short-lived signed URLs so one user cannot access another user’s campaign files.
 - Browser walkthrough tests are not yet committed.
 - The repository still has deterministic fixtures for fallback and some non-demo screens while the authenticated read path is being fully verified.
 - Monitoring and structured timeout/error reporting for external AI and Storage providers remain future hardening work.
