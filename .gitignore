@@ -37,11 +37,8 @@ yarn-error.log*
 /.agents/
 /skills-lock.json
 /ANTIGRAVITY_HANDOFF.md
-/IMPLEMENTATION_PLAN.md
 /Idea.docx
-/todo.md
 /Agents.md
-/problem-statement.md
 
 
 # vercel

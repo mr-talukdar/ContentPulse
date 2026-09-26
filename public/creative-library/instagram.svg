@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0a0507" />
+      <stop offset="40%" stop-color="#180a10" />
+      <stop offset="70%" stop-color="#0d0407" />
+      <stop offset="100%" stop-color="#050203" />
+    </linearGradient>
+    <radialGradient id="spotlight" cx="50%" cy="38%" r="45%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#991b1b" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="fog" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#050203" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#050203" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#050203" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="crimson" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect width="1080" height="1920" fill="url(#bg)" />
+  <rect width="1080" height="1920" fill="url(#spotlight)" />
+
+  <!-- Atmospheric Background Lines / Sound Waves -->
+  <g opacity="0.15" stroke="#ef4444" stroke-width="2">
+    <line x1="140" y1="200" x2="140" y2="1720" stroke-dasharray="8 12" />
+    <line x1="940" y1="200" x2="940" y2="1720" stroke-dasharray="8 12" />
+    <circle cx="540" cy="720" r="320" fill="none" stroke-width="1.5" stroke-dasharray="4 8" />
+    <circle cx="540" cy="720" r="480" fill="none" stroke-width="1" stroke-dasharray="6 14" />
+  </g>
+
+  <!-- Dramatic Character Silhouette -->
+  <g id="character-silhouette" opacity="0.9">
+    <!-- Backlight aura -->
+    <ellipse cx="540" cy="760" rx="190" ry="340" fill="#dc2626" opacity="0.25" filter="blur(40px)" />
+    <!-- Head and shoulders -->
+    <path d="M540 510 C500 510 470 545 470 595 C470 655 495 685 515 700 C450 725 390 770 360 840 C340 890 325 970 310 1150 L770 1150 C755 970 740 890 720 840 C690 770 630 725 565 700 C585 685 610 655 610 595 C610 545 580 510 540 510 Z" fill="#080305" />
+    <!-- Silhouette highlight rim -->
+    <path d="M472 610 C470 650 495 680 515 700 C450 725 395 770 365 840 C350 880 338 940 326 1040" fill="none" stroke="#ef4444" stroke-width="4" opacity="0.7" />
+    <path d="M608 610 C610 650 585 680 565 700 C630 725 685 770 715 840 C730 880 742 940 754 1040" fill="none" stroke="#ef4444" stroke-width="4" opacity="0.7" />
+  </g>
+
+  <!-- Foreground Dark Gradient Fog -->
+  <rect y="800" width="1080" height="1120" fill="url(#fog)" />
+
+  <!-- Top Brand Lockup -->
+  <g transform="translate(90, 110)">
+    <rect width="180" height="42" rx="6" fill="#ef4444" />
+    <text x="90" y="27" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="16" font-weight="900" letter-spacing="2" text-anchor="middle">HOICHOI</text>
+    <rect x="195" y="0" width="130" height="42" rx="6" fill="#1c0d12" stroke="#ef4444" stroke-width="1.5" />
+    <text x="260" y="26" fill="#fca5a5" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif" font-size="13" font-weight="700" letter-spacing="3" text-anchor="middle">ORIGINAL</text>
+    <text x="900" y="28" fill="#a1a1aa" font-family="monospace" font-size="15" text-anchor="end" letter-spacing="1">9:16 VERTICAL</text>
+  </g>
+
+  <!-- Main Dramatic Title Treatment -->
+  <g transform="translate(90, 1340)">
+    <!-- Genre & Tagline -->
+    <text x="0" y="0" fill="#ef4444" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="22" font-weight="800" letter-spacing="6">PSYCHOLOGICAL THRILLER</text>
+    
+    <!-- Bengali Main Title -->
+    <text x="0" y="90" fill="#ffffff" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="94" font-weight="900" letter-spacing="1">রাত বাকি</text>
+    <text x="0" y="160" fill="#fca5a5" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="44" font-weight="800" letter-spacing="4">THE SIGNAL</text>
+    
+    <!-- Emotional Hook -->
+    <text x="0" y="230" fill="#d4d4d8" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="26" font-weight="400">“কিছু রহস্য কোনোদিন চাপা থাকে না...”</text>
+    <text x="0" y="268" fill="#71717a" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="20">A buried truth resurfaces in the dark.</text>
+
+    <!-- Call to Action Banner -->
+    <g transform="translate(0, 320)">
+      <rect width="360" height="74" rx="10" fill="url(#crimson)" />
+      <polygon points="40,25 40,49 62,37" fill="#ffffff" />
+      <text x="80" y="47" fill="#ffffff" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="26" font-weight="800">এখনই দেখুন</text>
+      
+      <!-- Hoichoi Subscription Stamp -->
+      <rect x="385" y="0" width="280" height="74" rx="10" fill="#120609" stroke="#ef4444" stroke-width="2" />
+      <text x="525" y="46" fill="#fca5a5" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="20" font-weight="700" letter-spacing="1" text-anchor="middle">STREAMING NOW</text>
+    </g>
+  </g>
+
+  <!-- Production Credits Strip -->
+  <g transform="translate(90, 1850)" opacity="0.6">
+    <text x="0" y="0" fill="#71717a" font-family="sans-serif" font-size="14" letter-spacing="2">DIRECTED BY HOICHOI STUDIOS • 4K ULTRA HD • 5.1 AUDIO</text>
+    <text x="900" y="0" fill="#71717a" font-family="sans-serif" font-size="14" text-anchor="end">CONTENTPULSE AI CREATIVE</text>
+  </g>
+</svg>

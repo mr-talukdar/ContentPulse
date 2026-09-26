@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900">
+  <defs>
+    <linearGradient id="yt-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08080c" />
+      <stop offset="45%" stop-color="#0f172a" />
+      <stop offset="75%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#05030a" />
+    </linearGradient>
+    <radialGradient id="anamorphic-glow" cx="72%" cy="46%" r="55%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.45" />
+      <stop offset="40%" stop-color="#1d4ed8" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="red-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <linearGradient id="card-overlay" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#05030a" stop-opacity="0.95" />
+      <stop offset="45%" stop-color="#05030a" stop-opacity="0.8" />
+      <stop offset="75%" stop-color="#05030a" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#05030a" stop-opacity="0.1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Layer -->
+  <rect width="1600" height="900" fill="url(#yt-bg)" />
+  <rect width="1600" height="900" fill="url(#anamorphic-glow)" />
+
+  <!-- Anamorphic Blue Flare Streak -->
+  <line x1="0" y1="410" x2="1600" y2="410" stroke="#60a5fa" stroke-width="2" opacity="0.4" />
+  <ellipse cx="1150" cy="410" rx="350" ry="12" fill="#93c5fd" opacity="0.6" />
+
+  <!-- Dramatic Scene Elements / Train Platform Silhouette -->
+  <g opacity="0.75">
+    <!-- Atmospheric fog layers -->
+    <path d="M0 640 Q400 580 800 640 T1600 620 L1600 900 L0 900 Z" fill="#030712" />
+    <path d="M0 720 Q500 680 1000 730 T1600 700 L1600 900 L0 900 Z" fill="#02040a" />
+
+    <!-- Station Lamp Spotlight -->
+    <polygon points="1200,0 1050,900 1350,900" fill="#fef08a" opacity="0.04" />
+    <!-- Character in the Shadows -->
+    <ellipse cx="1200" cy="520" rx="42" ry="54" fill="#02040a" />
+    <path d="M1150 580 C1150 560 1170 550 1200 550 C1230 550 1250 560 1250 580 L1270 780 L1130 780 Z" fill="#02040a" />
+    <circle cx="1200" cy="410" r="140" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="6 8" opacity="0.4" />
+  </g>
+
+  <!-- Left Shadow Overlay for Text Legibility -->
+  <rect width="1600" height="900" fill="url(#card-overlay)" />
+
+  <!-- Top Metadata Bar -->
+  <g transform="translate(100, 80)">
+    <rect width="150" height="38" rx="6" fill="#ef4444" />
+    <text x="75" y="24" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="14" font-weight="900" letter-spacing="2" text-anchor="middle">HOICHOI</text>
+    <rect x="165" y="0" width="170" height="38" rx="6" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5" />
+    <text x="250" y="23" fill="#93c5fd" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="700" letter-spacing="2" text-anchor="middle">OFFICIAL TEASER</text>
+    <rect x="350" y="0" width="100" height="38" rx="6" fill="#18181b" />
+    <text x="400" y="23" fill="#a1a1aa" font-family="monospace" font-size="12" text-anchor="middle">16:9 4K</text>
+  </g>
+
+  <!-- Central / Left Main Title Section -->
+  <g transform="translate(100, 360)">
+    <!-- Episode Badge -->
+    <text x="0" y="0" fill="#60a5fa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="20" font-weight="800" letter-spacing="4">SEASON 1 • EPISODE 3 CLIMAX</text>
+    
+    <!-- Bengali Massive Headline -->
+    <text x="0" y="90" fill="#ffffff" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="88" font-weight="900">যে সত্য লুকিয়ে ছিল...</text>
+    <text x="0" y="165" fill="#f87171" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="46" font-weight="900" letter-spacing="2">THE UNTOLD SIGNAL</text>
+
+    <!-- Narrative Hook -->
+    <text x="0" y="230" fill="#cbd5e1" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="24">“একটি সংকেত যা পরিবারটির সাজানো অতীতকে গুঁড়িয়ে দেবে।”</text>
+    <text x="0" y="265" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="18">Every dark secret returns to the station where it started.</text>
+
+    <!-- Watch on YouTube Button Lockup -->
+    <g transform="translate(0, 320)">
+      <rect width="320" height="66" rx="8" fill="url(#red-accent)" />
+      <polygon points="36,21 36,45 56,33" fill="#ffffff" />
+      <text x="75" y="42" fill="#ffffff" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="22" font-weight="800">সম্পূর্ণ ট্রেলার দেখুন</text>
+      
+      <rect x="340" y="0" width="220" height="66" rx="8" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5" />
+      <text x="450" y="40" fill="#93c5fd" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="17" font-weight="700" letter-spacing="1" text-anchor="middle">WATCH TRAILER</text>
+    </g>
+  </g>
+
+  <!-- Large YouTube Play Icon Accent Overlay -->
+  <g transform="translate(1320, 680)">
+    <circle cx="90" cy="90" r="70" fill="#ef4444" opacity="0.9" />
+    <polygon points="80,68 80,112 114,90" fill="#ffffff" />
+    <circle cx="90" cy="90" r="85" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.4" />
+  </g>
+</svg>

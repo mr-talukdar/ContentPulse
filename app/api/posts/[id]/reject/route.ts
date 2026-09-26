@@ -1,0 +1,15 @@
+import { NextResponse } from "next/server";
+import { body, transitionPost } from "@/app/api/_lib";
+export async function POST(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  const input = await body(request);
+  const result = await transitionPost(id, "rejected", {
+    rejectionReason: String(
+      input.feedback ?? input.rejectionReason ?? "Human review requested.",
+    ),
+  });
+  return result.error ?? NextResponse.json(result.post);
+}

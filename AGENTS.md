@@ -10,4 +10,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project handoff
 
-Before making changes, read [ANTIGRAVITY_HANDOFF.md](ANTIGRAVITY_HANDOFF.md), [problem-statement.md](problem-statement.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), and [todo.md](todo.md). Preserve the current scaffold and user changes. Execute `todo.md` in order; the handoff document is the source of truth for product scope, environment variables, completed work, and the next implementation sequence.
+Before making changes, read [ANTIGRAVITY_HANDOFF.md](ANTIGRAVITY_HANDOFF.md). It is the single source of truth for product scope, environment variables, completed work, open decisions, requirements, and the next implementation sequence. Preserve the current scaffold and user changes. Update its status ledger and checklist as work progresses.

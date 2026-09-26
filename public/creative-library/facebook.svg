@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="fb-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090508" />
+      <stop offset="45%" stop-color="#140a12" />
+      <stop offset="85%" stop-color="#080206" />
+      <stop offset="100%" stop-color="#020003" />
+    </linearGradient>
+    <radialGradient id="fb-glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#7f1d1d" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="fb-red" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444" />
+      <stop offset="100%" stop-color="#b91c1c" />
+    </linearGradient>
+    <linearGradient id="fb-fog" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#020003" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#020003" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#020003" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="url(#fb-bg)" />
+  <rect width="1080" height="1080" fill="url(#fb-glow)" />
+
+  <!-- Theatrical Framing Grid -->
+  <rect x="50" y="50" width="980" height="980" fill="none" stroke="#ef4444" stroke-width="2" opacity="0.35" />
+  <rect x="62" y="62" width="956" height="956" fill="none" stroke="#27272a" stroke-width="1" />
+
+  <!-- Dramatic Shadows & Emotional Visual Tension -->
+  <g opacity="0.85">
+    <!-- Two Facing Character Profiles in Shadow -->
+    <path d="M220 540 C220 460 270 410 320 410 C370 410 400 450 400 500 C400 560 360 600 340 610 C390 640 430 700 440 820 L160 820 C180 730 200 640 220 540 Z" fill="#0c0408" />
+    <path d="M860 540 C860 460 810 410 760 410 C710 410 680 450 680 500 C680 560 720 600 740 610 C690 640 650 700 640 820 L920 820 C900 730 880 640 860 540 Z" fill="#0c0408" />
+    
+    <!-- Central Mystery Light / The Signal Beacon -->
+    <ellipse cx="540" cy="460" rx="90" ry="160" fill="#ef4444" opacity="0.25" filter="blur(20px)" />
+    <circle cx="540" cy="440" r="16" fill="#fca5a5" />
+    <circle cx="540" cy="440" r="48" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="4 6" opacity="0.7" />
+    <circle cx="540" cy="440" r="96" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="8 8" opacity="0.5" />
+  </g>
+
+  <!-- Bottom Fog -->
+  <rect y="480" width="1080" height="600" fill="url(#fb-fog)" />
+
+  <!-- Top Header Lockup -->
+  <g transform="translate(90, 90)">
+    <rect width="160" height="40" rx="6" fill="#ef4444" />
+    <text x="80" y="26" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="15" font-weight="900" letter-spacing="2" text-anchor="middle">HOICHOI</text>
+    <rect x="175" y="0" width="140" height="40" rx="6" fill="#180b12" stroke="#ef4444" stroke-width="1.5" />
+    <text x="245" y="25" fill="#fca5a5" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="12" font-weight="700" letter-spacing="2" text-anchor="middle">COMMUNITY</text>
+    <text x="900" y="26" fill="#a1a1aa" font-family="monospace" font-size="14" text-anchor="end">1:1 SQUARE</text>
+  </g>
+
+  <!-- Theatrical Main Copy & Hook -->
+  <g transform="translate(90, 680)">
+    <!-- Discussion Topic Tag -->
+    <text x="0" y="0" fill="#ef4444" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="16" font-weight="800" letter-spacing="5">EPISODE DISCUSSION • হইচই আড্ডা</text>
+    
+    <!-- Massive Conversational Bengali Hook -->
+    <text x="0" y="68" fill="#ffffff" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="64" font-weight="900">আপনি কার পক্ষে?</text>
+    <text x="0" y="130" fill="#fca5a5" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="34" font-weight="800" letter-spacing="2">WHO DO YOU TRUST?</text>
+    
+    <!-- Context / Sub-hook -->
+    <text x="0" y="180" fill="#d4d4d8" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="22">“রিয়ার পরিবারের এই অন্ধকার সত্যিটা কি সবার সামনে আসা উচিত?”</text>
+    <text x="0" y="210" fill="#71717a" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="16">Drop your theories below. Stream Episode 3 now on Hoichoi.</text>
+
+    <!-- Bottom Actions -->
+    <g transform="translate(0, 240)">
+      <rect width="300" height="60" rx="8" fill="url(#fb-red)" />
+      <polygon points="32,19 32,41 50,30" fill="#ffffff" />
+      <text x="68" y="38" fill="#ffffff" font-family="'Noto Sans Bengali', 'Hind Siliguri', sans-serif" font-size="20" font-weight="800">এখনই দেখুন ও মতামত দিন</text>
+      
+      <rect x="320" y="0" width="220" height="60" rx="8" fill="#140810" stroke="#ef4444" stroke-width="1.5" />
+      <text x="430" y="37" fill="#fca5a5" font-family="-apple-system, BlinkMacSystemFont, 'Inter', sans-serif" font-size="16" font-weight="700" text-anchor="middle">#HoichoiAdda</text>
+    </g>
+  </g>
+</svg>
