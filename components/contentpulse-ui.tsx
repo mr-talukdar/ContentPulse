@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -526,6 +526,21 @@ export function StudioWorkspace() {
     generationMessages[0],
   );
   const [notice, setNotice] = useState("");
+  useEffect(() => {
+    const storedBrief = window.sessionStorage.getItem("contentpulse-next-brief");
+    if (!storedBrief) return;
+    try {
+      const brief = JSON.parse(storedBrief);
+      startTransition(() => {
+        setForm((current) => ({ ...current, ...brief }));
+        setNotice("Next brief loaded from your insight. Review it, then generate.");
+      });
+    } catch {
+      startTransition(() => setNotice("The next brief could not be loaded."));
+    } finally {
+      window.sessionStorage.removeItem("contentpulse-next-brief");
+    }
+  }, []);
   useEffect(() => {
     if (!busy) return;
     let index = 0;
@@ -1295,6 +1310,7 @@ export function AnalyticsWorkspace() {
 }
 
 export function InsightsWorkspace() {
+  const router = useRouter();
   const [items, setItems] = useState<typeof demoInsights>([]);
   const [notice, setNotice] = useState("");
   const [campaignId, setCampaignId] = useState("");
@@ -1328,11 +1344,10 @@ export function InsightsWorkspace() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ insightId: id }),
     }).then((res) => res.json());
-    setNotice(
-      result.brief
-        ? `Next brief prepared: ${result.brief.campaignName}`
-        : "Could not create next brief.",
-    );
+    if (result.brief) {
+      window.sessionStorage.setItem("contentpulse-next-brief", JSON.stringify(result.brief));
+      router.push("/studio");
+    } else setNotice("Could not create next brief.");
   }
   return (
     <div className="space-y-5">
