@@ -21,15 +21,29 @@ export async function transitionPost(
   to: PostStatus,
   fields: Record<string, unknown> = {},
 ) {
-  const post = getPost(id);
+  const repository = await getContentRepository();
+  let post = getPost(id);
+  
+  // If not in memory, try to load it from the repository
+  if (!post && repository) {
+    post = await repository.getPost(id);
+  }
+  
   if (!post) return { error: jsonError("Post not found.", 404) };
   try {
     assertTransition(post.status, to);
   } catch (error) {
     return { error: jsonError((error as Error).message, 409) };
   }
-  const updatedPost = contentStore.updatePostStatus(id, to, fields);
-  const repository = await getContentRepository();
-  if (repository && updatedPost) await repository.savePost(updatedPost);
+  
+  const updatedPost = { ...post, ...fields, status: to };
+  
+  // Update in memory if it was there (or to cache it)
+  contentStore.posts.set(id, updatedPost);
+  
+  if (repository) {
+    await repository.savePost(updatedPost);
+  }
+  
   return { post: updatedPost };
 }

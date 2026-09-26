@@ -9,7 +9,12 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
-  const post = getPost(id);
+  const { getContentRepository } = await import("@/utils/contentpulse/repository");
+  const repository = await getContentRepository();
+  let post = getPost(id);
+  if (!post && repository) {
+    post = await repository.getPost(id);
+  }
   if (!post) return jsonError("Post not found.", 404);
   const adapter =
     post.platform === "instagram"
