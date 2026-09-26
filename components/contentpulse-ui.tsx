@@ -20,6 +20,8 @@ import {
   normalizeHashtags,
   normalizeStringList,
 } from "@/utils/contentpulse/normalize";
+import { CommandCenter as ExtractedCommandCenter } from "@/components/contentpulse/command-center";
+import { PostCard as ExtractedPostCard } from "@/components/contentpulse/post-card";
 
 const platformNames: Record<Platform, string> = {
   instagram: "Instagram",
@@ -148,7 +150,7 @@ function PlatformTag({
   );
 }
 
-function PostCard({
+export function LegacyPostCard({
   post,
   onAction,
   autoGenerate = false,
@@ -349,7 +351,7 @@ function PostCard({
   );
 }
 
-export function CommandCenter() {
+function LegacyCommandCenter() {
   const [campaigns, setCampaigns] = useState<
     Array<{ id: string; name: string; status: string }>
   >([]);
@@ -531,6 +533,9 @@ export function CommandCenter() {
     </div>
   );
 }
+
+export { ExtractedCommandCenter as CommandCenter };
+export { LegacyCommandCenter };
 
 export function StudioWorkspace() {
   const router = useRouter();
@@ -760,7 +765,7 @@ export function StudioWorkspace() {
           ) : (
             <div className="studio-carousel flex w-full min-w-0 max-w-full gap-4 overflow-x-auto pb-4">
               {posts.map((post, index) => (
-                <PostCard
+                <ExtractedPostCard
                   key={post.id}
                   post={post}
                   autoGenerate
@@ -790,8 +795,7 @@ export function ApprovalWorkspace() {
     fetch("/api/posts")
       .then((response) => response.json())
       .then((result) => {
-        if (Array.isArray(result.posts))
-          setItems(result.posts);
+        if (Array.isArray(result.posts)) setItems(result.posts);
       });
     fetch("/api/campaigns")
       .then((response) => response.json())
@@ -944,10 +948,14 @@ export function ApprovalWorkspace() {
           </h2>
         </div>
         {campaignGroups.length === 0 ? (
-          <div className={`${panelClass} flex min-h-60 flex-col items-center justify-center p-8 text-center`}>
-            <p className="text-sm text-zinc-400">No campaigns awaiting review.</p>
+          <div
+            className={`${panelClass} flex min-h-60 flex-col items-center justify-center p-8 text-center`}>
+            <p className="text-sm text-zinc-400">
+              No campaigns awaiting review.
+            </p>
             <p className="mt-1 text-xs text-zinc-600">
-              Create a campaign brief in Generative Studio to produce posts for approval.
+              Create a campaign brief in Generative Studio to produce posts for
+              approval.
             </p>
             <a
               href="/studio"
@@ -979,8 +987,9 @@ export function ApprovalWorkspace() {
                     <Tag>{campaign.posts.length} posts</Tag>
                     <Tag tone="amber">
                       {
-                        campaign.posts.filter((post) => post.status === "review")
-                          .length
+                        campaign.posts.filter(
+                          (post) => post.status === "review",
+                        ).length
                       }{" "}
                       in review
                     </Tag>
@@ -1674,21 +1683,54 @@ export function PublisherWorkspace() {
 }
 
 export function AnalyticsWorkspace() {
+  const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [metrics, setMetrics] = useState<PostMetrics[]>([]);
+  const [posts, setPosts] = useState<GeneratedPost[]>([]);
+  const [metricNotice, setMetricNotice] = useState("");
+  
   useEffect(() => {
-    fetch("/api/metrics")
+    fetch("/api/campaigns")
       .then((response) => response.json())
       .then((result) => {
-        if (Array.isArray(result.metrics))
-          setMetrics(result.metrics);
+        if (Array.isArray(result.campaigns) && result.campaigns.length > 0) {
+          setCampaigns(result.campaigns);
+          setSelectedCampaignId(result.campaigns[0].id);
+        }
       });
   }, []);
-  const platformFor = (postId: string) =>
-    postId.startsWith("IG")
-      ? "Instagram"
-      : postId.startsWith("YT")
-        ? "YouTube"
-        : "Facebook";
+
+  useEffect(() => {
+    if (!selectedCampaignId) return;
+    Promise.all([
+      fetch(`/api/metrics`).then(res => res.json()),
+      fetch(`/api/posts?campaignId=${selectedCampaignId}&status=published`).then(res => res.json())
+    ]).then(([metricsResult, postsResult]) => {
+      const publishedPosts = Array.isArray(postsResult.posts) ? postsResult.posts : [];
+      setPosts(publishedPosts);
+      
+      const publishedPostIds = new Set(publishedPosts.map((p: GeneratedPost) => p.id));
+      if (Array.isArray(metricsResult.metrics)) {
+        setMetrics(metricsResult.metrics.filter((m: PostMetrics) => publishedPostIds.has(m.postId)));
+      }
+    });
+  }, [selectedCampaignId]);
+  async function ingestMetrics() {
+    const result = await fetch("/api/metrics/ingest", { method: "POST" }).then(
+      (response) => response.json(),
+    );
+    if (Array.isArray(result.metrics)) {
+      setMetrics(result.metrics);
+      setMetricNotice(
+        `Simulated from ${result.metrics.length} published mock-adapter post${result.metrics.length === 1 ? "" : "s"}.`,
+      );
+    } else setMetricNotice(result.error ?? "Metrics could not be ingested.");
+  }
+  const platformFor = (postId: string) => {
+    const post = posts.find((p) => p.id === postId);
+    if (post) return post.platform === 'youtube' ? 'YouTube' : post.platform === 'facebook' ? 'Facebook' : 'Instagram';
+    return postId.startsWith("IG") ? "Instagram" : postId.startsWith("YT") ? "YouTube" : "Facebook";
+  };
   const formatNumber = (value?: number) =>
     value == null ? "—" : value.toLocaleString();
   const rows = [
@@ -1717,10 +1759,14 @@ export function AnalyticsWorkspace() {
   if (metrics.length === 0) {
     return (
       <div className="space-y-5">
-        <section className={`${panelClass} flex min-h-60 flex-col items-center justify-center p-8 text-center`}>
-          <p className="text-sm text-zinc-400">No performance metrics recorded yet.</p>
+        <section
+          className={`${panelClass} flex min-h-60 flex-col items-center justify-center p-8 text-center`}>
+          <p className="text-sm text-zinc-400">
+            No performance metrics recorded yet.
+          </p>
           <p className="mt-1 text-xs text-zinc-600">
-            Publish posts in the Publisher workspace to begin ingesting cross-platform engagement metrics.
+            Publish posts in the Publisher workspace to begin ingesting
+            cross-platform engagement metrics.
           </p>
           <a
             href="/publisher"
@@ -1743,7 +1789,20 @@ export function AnalyticsWorkspace() {
               Like-for-like performance
             </h2>
           </div>
-          <Tag tone="green">{metrics.length} posts compared</Tag>
+          <div className="flex items-center gap-2">
+            <Tag tone="green">{metrics.length} posts compared</Tag>
+            <Button
+              onClick={ingestMetrics}
+              className="border-blue-500/50 text-blue-300">
+              Ingest published metrics
+            </Button>
+          </div>
+        </div>
+        <div className="mb-4 flex items-center gap-2">
+          <Tag tone="amber">source: mock-adapter</Tag>
+          {metricNotice && (
+            <span className="text-xs text-zinc-500">{metricNotice}</span>
+          )}
         </div>
         <table className="w-full min-w-162.5 border-collapse text-left">
           <thead>
@@ -1793,6 +1852,7 @@ export function AnalyticsWorkspace() {
 
 export function InsightsWorkspace() {
   const router = useRouter();
+  const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
   const [items, setItems] = useState<Insight[]>([]);
   const [notice, setNotice] = useState("");
   const [campaignId, setCampaignId] = useState("");
@@ -1800,15 +1860,21 @@ export function InsightsWorkspace() {
     fetch("/api/campaigns")
       .then((response) => response.json())
       .then((result) => {
-        const firstCampaign = result.campaigns?.[0];
-        if (firstCampaign?.id) setCampaignId(firstCampaign.id);
+        if (Array.isArray(result.campaigns) && result.campaigns.length > 0) {
+          setCampaigns(result.campaigns);
+          setCampaignId(result.campaigns[0].id);
+        }
       });
-    fetch("/api/insights")
+  }, []);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    fetch(`/api/insights?campaignId=${campaignId}`)
       .then((response) => response.json())
       .then((result) => {
         if (Array.isArray(result.insights)) setItems(result.insights);
       });
-  }, []);
+  }, [campaignId]);
   async function generate() {
     const result = await fetch("/api/insights/generate", {
       method: "POST",
@@ -1837,20 +1903,38 @@ export function InsightsWorkspace() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-zinc-500">
-          Evidence-linked recommendations from your published content.
-        </p>
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-zinc-400 font-medium">Campaign:</label>
+          <select
+            className="border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200"
+            value={campaignId}
+            onChange={(e) => setCampaignId(e.target.value)}>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.id})
+              </option>
+            ))}
+          </select>
+        </div>
         <Button
           onClick={generate}
           className="border-blue-500 bg-blue-500/10 text-blue-200">
           Generate fresh insights ✦
         </Button>
       </div>
+      <p className="text-sm text-zinc-500">
+        Evidence-linked recommendations from your published content.
+      </p>
       {notice && (
         <div className="border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-200">
           {notice}
         </div>
       )}
+      <div className="mb-4">
+        <Tag tone="amber">
+          Evidence: published posts + persisted metrics + insights
+        </Tag>
+      </div>
       {items.length === 0 && (
         <div className={`${panelClass} text-sm text-zinc-500`}>
           No insights yet. Ingest metrics and generate insights from the active
@@ -1964,6 +2048,11 @@ export function ReportsWorkspace() {
   }
   return (
     <div className="space-y-5">
+      <div>
+        <Tag tone="amber">
+          Evidence: published posts + persisted metrics + insights
+        </Tag>
+      </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Tag tone="blue">
