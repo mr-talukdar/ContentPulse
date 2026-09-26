@@ -904,7 +904,7 @@ content-pulse/
 ## 13. Implementation Phases
 
 ### Phase 0 — Inventory ✅ (This Document)
-- [x] Read ANTIGRAVITY_HANDOFF.md
+- [x] Review project specifications and architecture
 - [x] Inspect all existing code
 - [x] Understand existing scaffold
 - [x] Design system architecture

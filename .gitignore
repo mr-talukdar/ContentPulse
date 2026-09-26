@@ -33,12 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# local AI agent instructions, skills, and generated handoff artifacts
+# local AI agent instructions, skills, and generated artifacts
 /.agents/
 /skills-lock.json
-/ANTIGRAVITY_HANDOFF.md
 /Idea.docx
-/Agents.md
 
 
 # vercel
