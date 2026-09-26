@@ -11,7 +11,9 @@ export default function LoginPage() {
               H
             </span>
             <div>
-              <strong className="block text-base text-zinc-100">ContentPulse</strong>
+              <strong className="block text-base text-zinc-100">
+                ContentPulse
+              </strong>
               <span className="text-xs text-zinc-500">
                 AI content operations
               </span>
@@ -56,30 +58,32 @@ export default function LoginPage() {
 
               <div className="space-y-2.5 text-xs leading-6 text-zinc-400">
                 <p>
-                  ContentPulse is an AI powered content operations command center
-                  built by Rahul Talukdar during the Hoichoi AI Builders Hackathon
-                  ’26.
+                  ContentPulse is an AI powered content operations command
+                  center built by Rahul Talukdar during the Hoichoi AI Builders
+                  Hackathon ’26.
                 </p>
                 <p>
                   The idea is simple: content teams shouldn&apos;t have to treat
                   creation, publishing and analytics as separate workflows.
                 </p>
                 <p className="font-medium text-zinc-300">
-                  ContentPulse takes a single content brief and carries it through
-                  the entire loop:
+                  ContentPulse takes a single content brief and carries it
+                  through the entire loop:
                 </p>
                 <div className="overflow-x-auto rounded-xs border border-zinc-800 bg-zinc-950/80 px-3 py-2 font-mono text-[11px] text-zinc-300">
-                  Brief → Generate → Approve → Schedule → Publish → Measure → Learn
-                  → Next Brief
+                  Brief → Generate → Approve → Schedule → Publish → Measure →
+                  Learn → Next Brief
                 </div>
                 <p>
-                  It generates platform specific content for Instagram, YouTube and
-                  Facebook, creates native Bengali and English variations, gives
-                  humans control through an approval gate, validates content before
-                  publishing, and connects performance data back to AI generated
-                  insights.
+                  It generates platform specific content for Instagram, YouTube
+                  and Facebook, creates native Bengali and English variations,
+                  gives humans control through an approval gate, validates
+                  content before publishing, and connects performance data back
+                  to AI generated insights.
                 </p>
-                <p>The goal isn&apos;t simply to make AI generate more content.</p>
+                <p>
+                  The goal isn&apos;t simply to make AI generate more content.
+                </p>
                 <p className="font-medium text-zinc-300">
                   It&apos;s to make AI part of the entire content feedback loop.
                 </p>
@@ -100,7 +104,8 @@ export default function LoginPage() {
                     Control
                   </strong>
                   <span className="mt-0.5 block text-[11px] leading-4 text-zinc-500">
-                    Human approval before anything reaches the publishing pipeline
+                    Human approval before anything reaches the publishing
+                    pipeline
                   </span>
                 </div>
                 <div className="border-l-2 border-amber-500 pl-2.5">
@@ -122,8 +127,8 @@ export default function LoginPage() {
                     Built by Rahul Talukdar
                   </p>
                   <p className="mt-1.5 text-xs leading-5 text-zinc-300">
-                    I&apos;m a developer and builder who enjoys taking an idea from
-                    “what if?” to “okay, this actually works.”
+                    I&apos;m a developer and builder who enjoys taking an idea
+                    from “what if?” to “okay, this actually works.”
                   </p>
                 </div>
 
@@ -135,30 +140,38 @@ export default function LoginPage() {
                     Next.js · React · TypeScript · Tailwind · Supabase · Gemini
                   </p>
                   <p className="mt-1.5 text-[10px] italic text-zinc-500">
-                    Built under pressure, debugged under greater pressure, and powered
-                    by a questionable amount of caffeine.
+                    Built under pressure, debugged under greater pressure, and
+                    powered by a questionable amount of caffeine.
                   </p>
                 </div>
               </div>
 
               {/* Quote / Internship Easter Egg */}
-              <blockquote className="rounded-xs border border-zinc-800 bg-zinc-950/80 p-3.5 text-xs leading-5 text-zinc-300 shadow-sm">
+              <blockquote className="rounded-xs border border-zinc-800 bg-zinc-950/80 p-3 text-xs leading-5 text-zinc-300 shadow-sm">
                 <p className="italic text-zinc-200">
                   “I came here to build an AI content platform.
                   <br />I may also leave with an internship.”
                 </p>
-                <p className="mt-2 font-mono text-[11px] text-blue-400">
-                  useEffect(() =&gt; apply(), [opportunity])
+                <p className="mt-2 text-xs font-medium text-amber-300/90">
+                  কাজটা AI দিয়ে করালাম, চাকরিটা এবার মানুষই দিক। 😭
                 </p>
+                <div className="mt-2 space-y-0.5 font-mono text-[11px]">
+                  <p className="text-blue-400">
+                    useEffect(() =&gt; apply(), [opportunity])
+                  </p>
+                  <p className="text-emerald-400">
+                    {'await internship.find({ location: "anywhere" })'}
+                  </p>
+                </div>
                 <p className="mt-1 text-[10px] text-zinc-500">
-                  Dependency array intentionally not empty. I&apos;m ready to start.
-                  👀
+                  Dependency array intentionally not empty. I&apos;m ready to
+                  start. 👀
                 </p>
               </blockquote>
 
               <p className="text-[10px] text-zinc-600">
-                Built with curiosity, persistence, and an unhealthy willingness to
-                debug at 2 AM.
+                Built with curiosity, persistence, and an unhealthy willingness
+                to debug at 2 AM.
               </p>
             </div>
           </div>
