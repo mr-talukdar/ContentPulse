@@ -7,11 +7,12 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const platform = url.searchParams.get("platform") as Platform | null;
   const status = url.searchParams.get("status") as PostStatus | null;
+  const campaignId = url.searchParams.get("campaignId");
   const repository = await getContentRepository();
   if (repository) {
     try {
       return NextResponse.json({
-        posts: await repository.listPosts({ platform, status }),
+        posts: await repository.listPosts({ platform, status, campaignId }),
         persistence: "supabase",
       });
     } catch (error) {
@@ -22,10 +23,13 @@ export async function GET(request: Request) {
       );
     }
   }
-  const posts = [...contentStore.posts.values()].filter(
-    (post) =>
-      (!platform || post.platform === platform) &&
-      (!status || post.status === status),
-  );
+  const posts = [...contentStore.posts.values()]
+    .filter(
+      (post) =>
+        (!platform || post.platform === platform) &&
+        (!status || post.status === status) &&
+        (!campaignId || post.campaignId === campaignId),
+    )
+    .reverse();
   return NextResponse.json({ posts });
 }

@@ -26,6 +26,7 @@ type ContentRepository = {
   listPosts(filters?: {
     platform?: string | null;
     status?: string | null;
+    campaignId?: string | null;
   }): Promise<GeneratedPost[]>;
   listInsights(campaignId?: string | null): Promise<Insight[]>;
   listReports(): Promise<WeeklyReport[]>;
@@ -250,6 +251,7 @@ export async function getContentRepository(): Promise<ContentRepository | null> 
         .order("created_at", { ascending: false });
       if (filters.platform) query = query.eq("platform", filters.platform);
       if (filters.status) query = query.eq("status", filters.status);
+      if (filters.campaignId) query = query.eq("campaign_id", filters.campaignId);
       const { data, error } = await query;
       if (error) throw new Error(error.message);
       return (data ?? []).map(postFromRow);

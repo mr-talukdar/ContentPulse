@@ -73,15 +73,15 @@ function Button({
   className = "",
   disabled = false,
   onClick,
-  type = "button",
   title,
+  type = "button",
 }: {
   children: React.ReactNode;
   className?: string;
   disabled?: boolean;
   onClick?: () => void;
-  type?: "button" | "submit";
   title?: string;
+  type?: "button" | "submit";
 }) {
   return (
     <button
@@ -1169,7 +1169,11 @@ export function ApprovalWorkspace() {
 }
 
 export function PublisherWorkspace() {
-  const [items, setItems] = useState(demoPosts);
+  const [items, setItems] = useState<GeneratedPost[]>(demoPosts);
+  const [campaignNames, setCampaignNames] = useState<Record<string, string>>({});
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>("all");
+  const [platformFilter, setPlatformFilter] = useState<Platform | "all">("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState(() => {
@@ -1179,14 +1183,31 @@ export function PublisherWorkspace() {
   });
   const [publishErrors, setPublishErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    fetch("/api/posts")
-      .then((response) => response.json())
-      .then((result) => {
-        if (Array.isArray(result.posts) && result.posts.length > 0)
-          setItems(result.posts);
-      });
+  const refreshData = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const [postsRes, campRes] = await Promise.all([
+        fetch("/api/posts").then((r) => r.json()).catch(() => null),
+        fetch("/api/campaigns").then((r) => r.json()).catch(() => null),
+      ]);
+      if (postsRes && Array.isArray(postsRes.posts) && postsRes.posts.length > 0) {
+        setItems(postsRes.posts);
+      }
+      if (campRes && Array.isArray(campRes.campaigns)) {
+        setCampaignNames(
+          Object.fromEntries(
+            campRes.campaigns.map((c: { id: string; name: string }) => [c.id, c.name]),
+          ),
+        );
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void refreshData();
+  }, [refreshData]);
 
   async function schedule(post: GeneratedPost, targetDate?: string) {
     setBusyId(post.id);
@@ -1210,6 +1231,8 @@ export function PublisherWorkspace() {
           ),
         );
       }
+    } catch (err) {
+      console.error("Scheduling failed", err);
     } finally {
       setBusyId("");
       setSchedulingId(null);
@@ -1245,166 +1268,334 @@ export function PublisherWorkspace() {
     }
   }
 
+  const campaignIds = [...new Set(items.map((post) => post.campaignId))];
+
+  const visiblePosts = items.filter((post) => {
+    const matchesCampaign =
+      selectedCampaignId === "all" || post.campaignId === selectedCampaignId;
+    const matchesPlatform =
+      platformFilter === "all" || post.platform === platformFilter;
+    return matchesCampaign && matchesPlatform;
+  });
+
+  const counts = {
+    approved: visiblePosts.filter((p) => p.status === "approved").length,
+    scheduled: visiblePosts.filter((p) => p.status === "scheduled").length,
+    published: visiblePosts.filter((p) => p.status === "published").length,
+  };
+
   return (
     <div className="space-y-6">
-      <section className={`${panelClass} border-blue-500/30`}>
-        <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-400">
-          Final release gate
-        </p>
-        <h2 className="mt-2 text-xl font-semibold">
-          Approved content moves here to schedule and mock-publish.
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-zinc-500">
-          Every scheduled post is checked by its platform adapter before the
-          mock external post ID is created.
-        </p>
-      </section>
-      <div className="grid gap-4 lg:grid-cols-3">
-        {(["approved", "scheduled", "published"] as const).map((status) => (
-          <section
-            key={status}
-            className="min-h-96 border border-zinc-800 bg-zinc-950/60 p-4">
-            <div className="mb-4 flex justify-between">
-              <h2 className="font-semibold capitalize">{status}</h2>
-              <Tag tone={status === "published" ? "green" : "blue"}>
-                {items.filter((item) => item.status === status).length}
-              </Tag>
-            </div>
-            <div className="space-y-3">
-              {items
-                .filter((item) => item.status === status)
-                .map((post) => (
-                  <article
-                    key={post.id}
-                    className="border border-zinc-800 bg-zinc-900/60 p-3">
-                    <div className="flex justify-between">
-                      <PlatformTag platform={post.platform} ratio={false} />
-                      <code className="text-[10px] text-zinc-600">
-                        {post.id}
-                      </code>
-                    </div>
-                    {post.creativeUrl && (
-                      <Image
-                        src={post.creativeUrl}
-                        alt={post.title ?? "Creative preview"}
-                        width={320}
-                        height={180}
-                        className="mt-2.5 aspect-video w-full rounded-xs border border-zinc-800 object-cover"
-                        unoptimized
-                      />
-                    )}
-                    <p className="mt-3 text-xs leading-5 text-zinc-400">
-                      {post.title}
-                    </p>
-                    <div className="mt-3 space-y-1 border-t border-zinc-800 pt-3 text-[10px] text-zinc-500">
-                      <p className="text-green-400">
-                        ✓ Aspect ratio {post.aspectRatio}
-                      </p>
-                      <p className="text-green-400">
-                        ✓ {platformNames[post.platform]} adapter ready
-                      </p>
-                    </div>
+      {/* Header & Controls Panel */}
+      <section className={`${panelClass} space-y-5 border-blue-500/30`}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-400">
+              Final release gate
+            </p>
+            <h2 className="mt-1 text-xl font-semibold">
+              Campaign Release Pipeline & Mock Publisher
+            </h2>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">
+              Schedule approved content, run platform adapter validations, and simulate live social publications.
+            </p>
+          </div>
+          <Button
+            disabled={isRefreshing}
+            onClick={() => void refreshData()}
+            className="border-zinc-700 bg-zinc-800/80 text-xs text-zinc-300 hover:bg-zinc-700">
+            {isRefreshing ? "Syncing..." : "🔄 Refresh Data"}
+          </Button>
+        </div>
 
-                    {/* Schedule action under Approved */}
-                    {status === "approved" && (
-                      <div className="mt-3">
-                        {schedulingId === post.id ? (
-                          <div className="space-y-2 border border-blue-500/40 bg-blue-500/10 p-2.5">
-                            <label className="block text-[10px] font-bold uppercase tracking-wider text-blue-300">
-                              Publication Date & Time
-                            </label>
-                            <input
-                              type="datetime-local"
-                              value={scheduleDate}
-                              onChange={(e) => setScheduleDate(e.target.value)}
-                              className={`${inputClass} text-xs py-1 px-2 w-full`}
-                            />
+        {/* Filters */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800/80 pt-4">
+          {/* Campaign Filter */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+              Campaign:
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedCampaignId("all")}
+              className={`rounded-sm px-2.5 py-1 text-xs font-medium transition ${
+                selectedCampaignId === "all"
+                  ? "border border-red-500/80 bg-red-500/15 text-red-200"
+                  : "border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+              }`}>
+              All campaigns ({items.length})
+            </button>
+            {campaignIds.map((cid) => (
+              <button
+                key={cid}
+                type="button"
+                onClick={() => setSelectedCampaignId(cid)}
+                className={`rounded-sm px-2.5 py-1 text-xs font-medium transition ${
+                  selectedCampaignId === cid
+                    ? "border border-red-500/80 bg-red-500/15 text-red-200"
+                    : "border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+                }`}>
+                {campaignNames[cid] ?? cid} (
+                {items.filter((p) => p.campaignId === cid).length})
+              </button>
+            ))}
+          </div>
+
+          {/* Platform Filter */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mr-1">
+              Platform:
+            </span>
+            {(["all", "instagram", "youtube", "facebook"] as const).map((plat) => (
+              <button
+                key={plat}
+                type="button"
+                onClick={() => setPlatformFilter(plat)}
+                className={`rounded-sm px-2 py-0.5 text-xs transition ${
+                  platformFilter === plat
+                    ? "border border-blue-500 bg-blue-500/20 text-blue-200"
+                    : "border border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                }`}>
+                {plat === "all" ? "All" : platformNames[plat]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Status Pipeline Counter Bar */}
+        <div className="grid grid-cols-3 gap-3 border-t border-zinc-800/80 pt-4">
+          <div className="flex items-center justify-between rounded-sm border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+            <span className="text-xs text-amber-300/90 font-medium">1. Ready to Schedule</span>
+            <Tag tone="amber">{counts.approved}</Tag>
+          </div>
+          <div className="flex items-center justify-between rounded-sm border border-blue-500/30 bg-blue-500/5 px-3 py-2">
+            <span className="text-xs text-blue-300/90 font-medium">2. Scheduled for Release</span>
+            <Tag tone="blue">{counts.scheduled}</Tag>
+          </div>
+          <div className="flex items-center justify-between rounded-sm border border-green-500/30 bg-green-500/5 px-3 py-2">
+            <span className="text-xs text-green-300/90 font-medium">3. Published & Live</span>
+            <Tag tone="green">{counts.published}</Tag>
+          </div>
+        </div>
+      </section>
+
+      {/* 3-Column Kanban Board */}
+      <div className="grid gap-5 lg:grid-cols-3">
+        {(
+          [
+            { key: "approved", label: "Approved Posts", badgeTone: "amber", subtitle: "Awaiting Schedule" },
+            { key: "scheduled", label: "Scheduled Queue", badgeTone: "blue", subtitle: "Ready for Publication" },
+            { key: "published", label: "Published Assets", badgeTone: "green", subtitle: "Live on Platforms" },
+          ] as const
+        ).map(({ key: status, label, badgeTone, subtitle }) => {
+          const columnPosts = visiblePosts.filter((item) => item.status === status);
+
+          return (
+            <section
+              key={status}
+              className="flex min-h-[460px] flex-col rounded-sm border border-zinc-800 bg-zinc-950/70 p-4">
+              <div className="mb-4 flex items-center justify-between border-b border-zinc-800 pb-3">
+                <div>
+                  <h2 className="text-sm font-semibold tracking-wide text-zinc-100">{label}</h2>
+                  <p className="text-[10px] text-zinc-500">{subtitle}</p>
+                </div>
+                <Tag tone={badgeTone}>{columnPosts.length}</Tag>
+              </div>
+
+              {columnPosts.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+                  <p className="text-xs text-zinc-500">
+                    {status === "approved"
+                      ? "No approved posts awaiting schedule. Go to Approval Queue to approve posts."
+                      : status === "scheduled"
+                        ? "No posts scheduled. Select an approved post on the left to schedule it."
+                        : "No posts published yet. Click 'Validate & Mock Publish' on a scheduled post."}
+                  </p>
+                  {status === "approved" && (
+                    <a
+                      href="/approval"
+                      className="mt-3 text-xs text-red-400 hover:text-red-300 underline underline-offset-4">
+                      Open Approval Queue →
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {columnPosts.map((post) => (
+                    <article
+                      key={post.id}
+                      className="rounded-xs border border-zinc-800/90 bg-zinc-900/70 p-3.5 shadow-sm transition hover:border-zinc-700">
+                      <div className="flex items-center justify-between">
+                        <PlatformTag platform={post.platform} />
+                        <span className="font-mono text-[10px] text-zinc-500">
+                          {post.id}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <Tag tone="blue">
+                          {campaignNames[post.campaignId] ?? post.campaignId}
+                        </Tag>
+                        <Tag>
+                          {post.language === "bn" ? "Bengali (বাংলা)" : "English"}
+                        </Tag>
+                      </div>
+
+                      {/* Creative Image Preview */}
+                      {post.creativeUrl ? (
+                        <div className="mt-3 overflow-hidden rounded-xs border border-zinc-800 bg-black">
+                          <Image
+                            src={post.creativeUrl}
+                            alt={post.title ?? "Creative preview"}
+                            width={340}
+                            height={190}
+                            className="aspect-video w-full object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-3 flex aspect-video w-full items-center justify-center rounded-xs border border-dashed border-zinc-800 bg-zinc-950 text-[11px] text-zinc-600">
+                          {platformRatio[post.platform]} • Visual creative pending
+                        </div>
+                      )}
+
+                      <h3 className="mt-3 text-xs font-semibold text-zinc-200">
+                        {post.title ?? "Untitled publication"}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-zinc-400">
+                        {post.caption}
+                      </p>
+
+                      <div className="mt-3 space-y-1 border-t border-zinc-800/80 pt-2.5 text-[10px] text-zinc-500">
+                        <p className="flex items-center gap-1 text-green-400">
+                          <span>✓</span> Aspect ratio {post.aspectRatio}
+                        </p>
+                        <p className="flex items-center gap-1 text-green-400">
+                          <span>✓</span> {platformNames[post.platform]} adapter ready
+                        </p>
+                      </div>
+
+                      {/* SCHEDULE ACTION UNDER APPROVED */}
+                      {status === "approved" && (
+                        <div className="mt-3 border-t border-zinc-800 pt-3">
+                          {schedulingId === post.id ? (
+                            <div className="space-y-2.5 rounded-xs border border-blue-500/40 bg-blue-500/10 p-2.5">
+                              <label className="block text-[10px] font-bold uppercase tracking-wider text-blue-300">
+                                Target Publication Date & Time
+                              </label>
+                              <input
+                                type="datetime-local"
+                                value={scheduleDate}
+                                onChange={(e) => setScheduleDate(e.target.value)}
+                                className={`${inputClass} w-full px-2 py-1 text-xs`}
+                              />
+                              <div className="flex gap-1.5">
+                                {[
+                                  { label: "+2h", hours: 2 },
+                                  { label: "Tomorrow", hours: 24 },
+                                  { label: "+3d", hours: 72 },
+                                ].map(({ label, hours }) => (
+                                  <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => {
+                                      const d = new Date(Date.now() + hours * 3600 * 1000);
+                                      setScheduleDate(d.toISOString().slice(0, 16));
+                                    }}
+                                    className="rounded-xs border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-[10px] text-blue-200 hover:bg-blue-500/30">
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex gap-2 pt-1">
+                                <Button
+                                  disabled={busyId === post.id}
+                                  onClick={() => schedule(post, scheduleDate)}
+                                  className="flex-1 border-blue-500 bg-blue-600 py-1.5 text-xs text-white hover:bg-blue-500">
+                                  {busyId === post.id ? "Scheduling..." : "Confirm Schedule"}
+                                </Button>
+                                <Button
+                                  onClick={() => setSchedulingId(null)}
+                                  className="border-zinc-700 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800">
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
                             <div className="flex gap-2">
                               <Button
                                 disabled={busyId === post.id}
-                                onClick={() => schedule(post, scheduleDate)}
-                                className="flex-1 border-blue-500 bg-blue-600 text-white text-xs py-1.5 hover:bg-blue-500">
-                                {busyId === post.id ? "Scheduling..." : "Confirm Schedule"}
+                                onClick={() => {
+                                  const nextSlot = new Date(Date.now() + 2 * 60 * 60 * 1000)
+                                    .toISOString()
+                                    .slice(0, 16);
+                                  setScheduleDate(nextSlot);
+                                  setSchedulingId(post.id);
+                                }}
+                                className="flex-1 border-blue-500/60 bg-blue-500/10 py-1.5 text-xs text-blue-300 hover:bg-blue-500/20">
+                                Schedule Post ⏱
                               </Button>
                               <Button
-                                onClick={() => setSchedulingId(null)}
-                                className="border-zinc-700 text-zinc-400 text-xs py-1.5 hover:bg-zinc-800">
-                                Cancel
+                                disabled={busyId === post.id}
+                                onClick={() => schedule(post)}
+                                title="Schedule immediately for release"
+                                className="border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700">
+                                Now
                               </Button>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <Button
-                              disabled={busyId === post.id}
-                              onClick={() => {
-                                const nextSlot = new Date(Date.now() + 2 * 60 * 60 * 1000)
-                                  .toISOString()
-                                  .slice(0, 16);
-                                setScheduleDate(nextSlot);
-                                setSchedulingId(post.id);
-                              }}
-                              className="flex-1 border-blue-500/60 bg-blue-500/10 text-xs py-1.5 text-blue-300 hover:bg-blue-500/20">
-                              Schedule Post ⏱
-                            </Button>
-                            <Button
-                              disabled={busyId === post.id}
-                              onClick={() => schedule(post)}
-                              title="Schedule immediately with current timestamp"
-                              className="border-zinc-700 bg-zinc-800/80 px-2.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700">
-                              Now
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      )}
 
-                    {/* Publish action under Scheduled */}
-                    {status === "scheduled" && (
-                      <div className="mt-3 space-y-2">
-                        {post.scheduledAt && (
-                          <p className="text-[10px] text-blue-300 font-medium">
-                            ⏱ Scheduled: {new Date(post.scheduledAt).toLocaleString()}
-                          </p>
-                        )}
-                        <Button
-                          disabled={busyId === post.id}
-                          onClick={() => publish(post)}
-                          className="w-full border-red-500 bg-red-500/10 text-xs py-2 text-red-200 hover:bg-red-500/20">
-                          {busyId === post.id ? "Validating & Publishing..." : "Validate & Mock Publish"}
-                        </Button>
-                      </div>
-                    )}
+                      {/* PUBLISH ACTION UNDER SCHEDULED */}
+                      {status === "scheduled" && (
+                        <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
+                          {post.scheduledAt && (
+                            <p className="flex items-center gap-1.5 text-[11px] font-medium text-blue-300">
+                              <span>⏱</span> Scheduled: {new Date(post.scheduledAt).toLocaleString()}
+                            </p>
+                          )}
+                          <Button
+                            disabled={busyId === post.id}
+                            onClick={() => publish(post)}
+                            className="w-full border-red-500 bg-red-500/15 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/25">
+                            {busyId === post.id
+                              ? "Validating & Publishing..."
+                              : "Validate & Mock Publish 🚀"}
+                          </Button>
+                          {publishErrors[post.id] && (
+                            <p className="mt-2 border border-red-500/40 bg-red-500/10 p-2 text-[10px] text-red-300">
+                              ⚠️ {publishErrors[post.id]}
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                    {/* Information under Published */}
-                    {status === "published" && (
-                      <div className="mt-3 space-y-1">
-                        <p className="text-xs font-semibold text-green-400">
-                          ✓ Published successfully
-                        </p>
-                        {post.publishedAt && (
-                          <p className="text-[10px] text-zinc-400">
-                            {new Date(post.publishedAt).toLocaleString()}
+                      {/* PUBLISHED SUCCESS DETAILS */}
+                      {status === "published" && (
+                        <div className="mt-3 space-y-1.5 border-t border-zinc-800 pt-3">
+                          <p className="flex items-center gap-1 text-xs font-semibold text-green-400">
+                            <span>✓</span> Mock Published to {platformNames[post.platform]}
                           </p>
-                        )}
-                        {post.externalPostId && (
-                          <p className="text-[10px] font-mono text-zinc-500">
-                            External ID: {post.externalPostId}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {publishErrors[post.id] && (
-                      <p className="mt-2 text-[10px] text-red-300 bg-red-500/10 border border-red-500/30 p-1.5">
-                        {publishErrors[post.id]}
-                      </p>
-                    )}
-                  </article>
-                ))}
-            </div>
-          </section>
-        ))}
+                          {post.publishedAt && (
+                            <p className="text-[10px] text-zinc-400">
+                              Published: {new Date(post.publishedAt).toLocaleString()}
+                            </p>
+                          )}
+                          {post.externalPostId && (
+                            <div className="rounded-xs border border-zinc-800 bg-zinc-950 p-1.5 font-mono text-[10px] text-zinc-400">
+                              Post ID: {post.externalPostId}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
     </div>
   );
