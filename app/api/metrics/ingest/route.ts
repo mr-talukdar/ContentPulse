@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { body, jsonError } from "@/app/api/_lib";
-import { demoMetrics } from "@/utils/contentpulse/demo-data";
 import { contentStore } from "@/utils/contentpulse/store";
 import { getContentRepository } from "@/utils/contentpulse/repository";
 import type { GeneratedPost, PostMetrics } from "@/utils/contentpulse/types";
@@ -48,19 +47,20 @@ export async function POST(request: Request) {
   const selected = input.postId
     ? posts.filter((post) => post.id === input.postId).map(simulateMetrics)
     : posts.map(simulateMetrics);
-  const fallback = selected.length
-    ? selected
-    : input.postId
-      ? demoMetrics.filter((item) => item.postId === input.postId)
-      : demoMetrics;
-  if (!fallback.length)
-    return jsonError("No metrics found for that post.", 404);
-  for (const metric of fallback)
+
+  if (!selected.length) {
+    return jsonError(
+      "No published posts found to simulate metrics for. Publish a post first.",
+      404,
+    );
+  }
+
+  for (const metric of selected)
     contentStore.metrics.set(metric.postId, metric);
   if (repository)
-    for (const metric of fallback) await repository.saveMetrics(metric);
+    for (const metric of selected) await repository.saveMetrics(metric);
   return NextResponse.json({
-    metrics: fallback,
-    source: selected.length ? "published-post-simulation" : "demo-fallback",
+    metrics: selected,
+    source: "published-post-simulation",
   });
 }

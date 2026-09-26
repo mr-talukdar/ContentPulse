@@ -1,35 +1,19 @@
-import {
-  demoCampaigns,
-  demoConcept,
-  demoInsights,
-  demoMetrics,
-  demoPosts,
-  demoReport,
-} from "./demo-data";
 import type {
+  Campaign,
   CampaignConcept,
   GeneratedPost,
+  Insight,
+  PostMetrics,
   PostStatus,
   WeeklyReport,
 } from "./types";
 
-const campaigns = new Map(demoCampaigns.map((item) => [item.id, item]));
-const concepts = new Map<string, CampaignConcept>([
-  [demoConcept.id, demoConcept],
-]);
-const posts = new Map(demoPosts.map((item) => [item.id, item]));
-const metrics = new Map(demoMetrics.map((item) => [item.postId, item]));
-const insights = new Map(demoInsights.map((item) => [item.id, item]));
-const reports = new Map<string, WeeklyReport>([[demoReport.id, demoReport]]);
-posts.set("IG_004", {
-  ...demoPosts[0],
-  id: "IG_004",
-  aspectRatio: "16:9",
-  status: "scheduled",
-  externalPostId: undefined,
-  publishedAt: undefined,
-  scheduledAt: "2026-09-26T18:30:00.000Z",
-});
+const campaigns = new Map<string, Campaign>();
+const concepts = new Map<string, CampaignConcept>();
+const posts = new Map<string, GeneratedPost>();
+const metrics = new Map<string, PostMetrics>();
+const insights = new Map<string, Insight>();
+const reports = new Map<string, WeeklyReport>();
 
 export const contentStore = {
   campaigns,

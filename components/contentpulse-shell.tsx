@@ -56,7 +56,7 @@ export async function ContentPulseShell({
         <header className="cp-topbar">
           <span>Content operations / {title}</span>
           <span className="cp-live">
-            ● {user ? `Hi, ${firstName(user)}` : "Demo workspace"}
+            ● {user ? `Hi, ${firstName(user)}` : "ContentPulse Workspace"}
           </span>
         </header>
         <div className={wide ? "cp-content cp-content-wide" : "cp-content"}>

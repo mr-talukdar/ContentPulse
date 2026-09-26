@@ -9,13 +9,13 @@ import {
 } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  demoInsights,
-  demoMetrics,
-  demoPosts,
-  demoReport,
-} from "@/utils/contentpulse/demo-data";
-import type { GeneratedPost, Platform } from "@/utils/contentpulse/types";
+import type {
+  GeneratedPost,
+  Insight,
+  Platform,
+  PostMetrics,
+  WeeklyReport,
+} from "@/utils/contentpulse/types";
 import {
   normalizeHashtags,
   normalizeStringList,
@@ -354,7 +354,7 @@ export function CommandCenter() {
     Array<{ id: string; name: string; status: string }>
   >([]);
   const [posts, setPosts] = useState<GeneratedPost[]>([]);
-  const [insights, setInsights] = useState<typeof demoInsights>([]);
+  const [insights, setInsights] = useState<Insight[]>([]);
   useEffect(() => {
     Promise.all([
       fetch("/api/campaigns").then((response) => response.json()),
@@ -776,7 +776,7 @@ export function StudioWorkspace() {
 }
 
 export function ApprovalWorkspace() {
-  const [items, setItems] = useState(demoPosts);
+  const [items, setItems] = useState<GeneratedPost[]>([]);
   const [filter, setFilter] = useState<Platform | "all">("all");
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [campaignNames, setCampaignNames] = useState<Record<string, string>>(
@@ -790,7 +790,7 @@ export function ApprovalWorkspace() {
     fetch("/api/posts")
       .then((response) => response.json())
       .then((result) => {
-        if (Array.isArray(result.posts) && result.posts.length > 0)
+        if (Array.isArray(result.posts))
           setItems(result.posts);
       });
     fetch("/api/campaigns")
@@ -943,42 +943,56 @@ export function ApprovalWorkspace() {
             Campaigns awaiting review
           </h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {campaignGroups.map((campaign) => (
-            <button
-              key={campaign.id}
-              type="button"
-              onClick={() => setSelectedCampaignId(campaign.id)}
-              className={`${panelClass} text-left transition hover:border-blue-500/60`}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-400">
-                    Campaign
-                  </p>
-                  <h2 className="mt-2 text-lg font-semibold text-zinc-100">
-                    {campaign.name}
-                  </h2>
+        {campaignGroups.length === 0 ? (
+          <div className={`${panelClass} flex min-h-60 flex-col items-center justify-center p-8 text-center`}>
+            <p className="text-sm text-zinc-400">No campaigns awaiting review.</p>
+            <p className="mt-1 text-xs text-zinc-600">
+              Create a campaign brief in Generative Studio to produce posts for approval.
+            </p>
+            <a
+              href="/studio"
+              className="mt-4 border border-red-500 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20">
+              Go to Generative Studio →
+            </a>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {campaignGroups.map((campaign) => (
+              <button
+                key={campaign.id}
+                type="button"
+                onClick={() => setSelectedCampaignId(campaign.id)}
+                className={`${panelClass} text-left transition hover:border-blue-500/60`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-400">
+                      Campaign
+                    </p>
+                    <h2 className="mt-2 text-lg font-semibold text-zinc-100">
+                      {campaign.name}
+                    </h2>
+                  </div>
+                  <Tag tone="blue">{campaign.id}</Tag>
                 </div>
-                <Tag tone="blue">{campaign.id}</Tag>
-              </div>
-              <div className="mt-6 flex items-end justify-between">
-                <div className="flex gap-2">
-                  <Tag>{campaign.posts.length} posts</Tag>
-                  <Tag tone="amber">
-                    {
-                      campaign.posts.filter((post) => post.status === "review")
-                        .length
-                    }{" "}
-                    in review
-                  </Tag>
+                <div className="mt-6 flex items-end justify-between">
+                  <div className="flex gap-2">
+                    <Tag>{campaign.posts.length} posts</Tag>
+                    <Tag tone="amber">
+                      {
+                        campaign.posts.filter((post) => post.status === "review")
+                          .length
+                      }{" "}
+                      in review
+                    </Tag>
+                  </div>
+                  <span className="text-xs font-semibold text-blue-300">
+                    Open queue →
+                  </span>
                 </div>
-                <span className="text-xs font-semibold text-blue-300">
-                  Open queue →
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -1169,8 +1183,10 @@ export function ApprovalWorkspace() {
 }
 
 export function PublisherWorkspace() {
-  const [items, setItems] = useState<GeneratedPost[]>(demoPosts);
-  const [campaignNames, setCampaignNames] = useState<Record<string, string>>({});
+  const [items, setItems] = useState<GeneratedPost[]>([]);
+  const [campaignNames, setCampaignNames] = useState<Record<string, string>>(
+    {},
+  );
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>("all");
   const [platformFilter, setPlatformFilter] = useState<Platform | "all">("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -1181,22 +1197,31 @@ export function PublisherWorkspace() {
     d.setHours(d.getHours() + 2);
     return d.toISOString().slice(0, 16);
   });
-  const [publishErrors, setPublishErrors] = useState<Record<string, string>>({});
+  const [publishErrors, setPublishErrors] = useState<Record<string, string>>(
+    {},
+  );
 
   const refreshData = useCallback(async () => {
     setIsRefreshing(true);
     try {
       const [postsRes, campRes] = await Promise.all([
-        fetch("/api/posts").then((r) => r.json()).catch(() => null),
-        fetch("/api/campaigns").then((r) => r.json()).catch(() => null),
+        fetch("/api/posts")
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch("/api/campaigns")
+          .then((r) => r.json())
+          .catch(() => null),
       ]);
-      if (postsRes && Array.isArray(postsRes.posts) && postsRes.posts.length > 0) {
+      if (postsRes && Array.isArray(postsRes.posts)) {
         setItems(postsRes.posts);
       }
       if (campRes && Array.isArray(campRes.campaigns)) {
         setCampaignNames(
           Object.fromEntries(
-            campRes.campaigns.map((c: { id: string; name: string }) => [c.id, c.name]),
+            campRes.campaigns.map((c: { id: string; name: string }) => [
+              c.id,
+              c.name,
+            ]),
           ),
         );
       }
@@ -1253,7 +1278,9 @@ export function PublisherWorkspace() {
         );
       } else if (result.error || result.validation) {
         const errorMsg =
-          result.validation?.errors?.map((e: { message: string }) => e.message).join(", ") ??
+          result.validation?.errors
+            ?.map((e: { message: string }) => e.message)
+            .join(", ") ??
           result.error ??
           "Validation failed";
         setPublishErrors((current) => ({ ...current, [post.id]: errorMsg }));
@@ -1297,7 +1324,8 @@ export function PublisherWorkspace() {
               Campaign Release Pipeline & Mock Publisher
             </h2>
             <p className="mt-1 text-xs leading-5 text-zinc-400">
-              Schedule approved content, run platform adapter validations, and simulate live social publications.
+              Schedule approved content, run platform adapter validations, and
+              simulate live social publications.
             </p>
           </div>
           <Button
@@ -1346,34 +1374,42 @@ export function PublisherWorkspace() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mr-1">
               Platform:
             </span>
-            {(["all", "instagram", "youtube", "facebook"] as const).map((plat) => (
-              <button
-                key={plat}
-                type="button"
-                onClick={() => setPlatformFilter(plat)}
-                className={`rounded-sm px-2 py-0.5 text-xs transition ${
-                  platformFilter === plat
-                    ? "border border-blue-500 bg-blue-500/20 text-blue-200"
-                    : "border border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                }`}>
-                {plat === "all" ? "All" : platformNames[plat]}
-              </button>
-            ))}
+            {(["all", "instagram", "youtube", "facebook"] as const).map(
+              (plat) => (
+                <button
+                  key={plat}
+                  type="button"
+                  onClick={() => setPlatformFilter(plat)}
+                  className={`rounded-sm px-2 py-0.5 text-xs transition ${
+                    platformFilter === plat
+                      ? "border border-blue-500 bg-blue-500/20 text-blue-200"
+                      : "border border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                  }`}>
+                  {plat === "all" ? "All" : platformNames[plat]}
+                </button>
+              ),
+            )}
           </div>
         </div>
 
         {/* Status Pipeline Counter Bar */}
         <div className="grid grid-cols-3 gap-3 border-t border-zinc-800/80 pt-4">
           <div className="flex items-center justify-between rounded-sm border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-            <span className="text-xs text-amber-300/90 font-medium">1. Ready to Schedule</span>
+            <span className="text-xs text-amber-300/90 font-medium">
+              1. Ready to Schedule
+            </span>
             <Tag tone="amber">{counts.approved}</Tag>
           </div>
           <div className="flex items-center justify-between rounded-sm border border-blue-500/30 bg-blue-500/5 px-3 py-2">
-            <span className="text-xs text-blue-300/90 font-medium">2. Scheduled for Release</span>
+            <span className="text-xs text-blue-300/90 font-medium">
+              2. Scheduled for Release
+            </span>
             <Tag tone="blue">{counts.scheduled}</Tag>
           </div>
           <div className="flex items-center justify-between rounded-sm border border-green-500/30 bg-green-500/5 px-3 py-2">
-            <span className="text-xs text-green-300/90 font-medium">3. Published & Live</span>
+            <span className="text-xs text-green-300/90 font-medium">
+              3. Published & Live
+            </span>
             <Tag tone="green">{counts.published}</Tag>
           </div>
         </div>
@@ -1383,12 +1419,29 @@ export function PublisherWorkspace() {
       <div className="grid gap-5 lg:grid-cols-3">
         {(
           [
-            { key: "approved", label: "Approved Posts", badgeTone: "amber", subtitle: "Awaiting Schedule" },
-            { key: "scheduled", label: "Scheduled Queue", badgeTone: "blue", subtitle: "Ready for Publication" },
-            { key: "published", label: "Published Assets", badgeTone: "green", subtitle: "Live on Platforms" },
+            {
+              key: "approved",
+              label: "Approved Posts",
+              badgeTone: "amber",
+              subtitle: "Awaiting Schedule",
+            },
+            {
+              key: "scheduled",
+              label: "Scheduled Queue",
+              badgeTone: "blue",
+              subtitle: "Ready for Publication",
+            },
+            {
+              key: "published",
+              label: "Published Assets",
+              badgeTone: "green",
+              subtitle: "Live on Platforms",
+            },
           ] as const
         ).map(({ key: status, label, badgeTone, subtitle }) => {
-          const columnPosts = visiblePosts.filter((item) => item.status === status);
+          const columnPosts = visiblePosts.filter(
+            (item) => item.status === status,
+          );
 
           return (
             <section
@@ -1396,7 +1449,9 @@ export function PublisherWorkspace() {
               className="flex min-h-[460px] flex-col rounded-sm border border-zinc-800 bg-zinc-950/70 p-4">
               <div className="mb-4 flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div>
-                  <h2 className="text-sm font-semibold tracking-wide text-zinc-100">{label}</h2>
+                  <h2 className="text-sm font-semibold tracking-wide text-zinc-100">
+                    {label}
+                  </h2>
                   <p className="text-[10px] text-zinc-500">{subtitle}</p>
                 </div>
                 <Tag tone={badgeTone}>{columnPosts.length}</Tag>
@@ -1437,7 +1492,9 @@ export function PublisherWorkspace() {
                           {campaignNames[post.campaignId] ?? post.campaignId}
                         </Tag>
                         <Tag>
-                          {post.language === "bn" ? "Bengali (বাংলা)" : "English"}
+                          {post.language === "bn"
+                            ? "Bengali (বাংলা)"
+                            : "English"}
                         </Tag>
                       </div>
 
@@ -1455,7 +1512,8 @@ export function PublisherWorkspace() {
                         </div>
                       ) : (
                         <div className="mt-3 flex aspect-video w-full items-center justify-center rounded-xs border border-dashed border-zinc-800 bg-zinc-950 text-[11px] text-zinc-600">
-                          {platformRatio[post.platform]} • Visual creative pending
+                          {platformRatio[post.platform]} • Visual creative
+                          pending
                         </div>
                       )}
 
@@ -1471,7 +1529,8 @@ export function PublisherWorkspace() {
                           <span>✓</span> Aspect ratio {post.aspectRatio}
                         </p>
                         <p className="flex items-center gap-1 text-green-400">
-                          <span>✓</span> {platformNames[post.platform]} adapter ready
+                          <span>✓</span> {platformNames[post.platform]} adapter
+                          ready
                         </p>
                       </div>
 
@@ -1486,7 +1545,9 @@ export function PublisherWorkspace() {
                               <input
                                 type="datetime-local"
                                 value={scheduleDate}
-                                onChange={(e) => setScheduleDate(e.target.value)}
+                                onChange={(e) =>
+                                  setScheduleDate(e.target.value)
+                                }
                                 className={`${inputClass} w-full px-2 py-1 text-xs`}
                               />
                               <div className="flex gap-1.5">
@@ -1499,8 +1560,12 @@ export function PublisherWorkspace() {
                                     key={label}
                                     type="button"
                                     onClick={() => {
-                                      const d = new Date(Date.now() + hours * 3600 * 1000);
-                                      setScheduleDate(d.toISOString().slice(0, 16));
+                                      const d = new Date(
+                                        Date.now() + hours * 3600 * 1000,
+                                      );
+                                      setScheduleDate(
+                                        d.toISOString().slice(0, 16),
+                                      );
                                     }}
                                     className="rounded-xs border border-blue-500/30 bg-blue-500/20 px-2 py-0.5 text-[10px] text-blue-200 hover:bg-blue-500/30">
                                     {label}
@@ -1512,7 +1577,9 @@ export function PublisherWorkspace() {
                                   disabled={busyId === post.id}
                                   onClick={() => schedule(post, scheduleDate)}
                                   className="flex-1 border-blue-500 bg-blue-600 py-1.5 text-xs text-white hover:bg-blue-500">
-                                  {busyId === post.id ? "Scheduling..." : "Confirm Schedule"}
+                                  {busyId === post.id
+                                    ? "Scheduling..."
+                                    : "Confirm Schedule"}
                                 </Button>
                                 <Button
                                   onClick={() => setSchedulingId(null)}
@@ -1526,7 +1593,9 @@ export function PublisherWorkspace() {
                               <Button
                                 disabled={busyId === post.id}
                                 onClick={() => {
-                                  const nextSlot = new Date(Date.now() + 2 * 60 * 60 * 1000)
+                                  const nextSlot = new Date(
+                                    Date.now() + 2 * 60 * 60 * 1000,
+                                  )
                                     .toISOString()
                                     .slice(0, 16);
                                   setScheduleDate(nextSlot);
@@ -1552,7 +1621,8 @@ export function PublisherWorkspace() {
                         <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
                           {post.scheduledAt && (
                             <p className="flex items-center gap-1.5 text-[11px] font-medium text-blue-300">
-                              <span>⏱</span> Scheduled: {new Date(post.scheduledAt).toLocaleString()}
+                              <span>⏱</span> Scheduled:{" "}
+                              {new Date(post.scheduledAt).toLocaleString()}
                             </p>
                           )}
                           <Button
@@ -1575,11 +1645,13 @@ export function PublisherWorkspace() {
                       {status === "published" && (
                         <div className="mt-3 space-y-1.5 border-t border-zinc-800 pt-3">
                           <p className="flex items-center gap-1 text-xs font-semibold text-green-400">
-                            <span>✓</span> Mock Published to {platformNames[post.platform]}
+                            <span>✓</span> Mock Published to{" "}
+                            {platformNames[post.platform]}
                           </p>
                           {post.publishedAt && (
                             <p className="text-[10px] text-zinc-400">
-                              Published: {new Date(post.publishedAt).toLocaleString()}
+                              Published:{" "}
+                              {new Date(post.publishedAt).toLocaleString()}
                             </p>
                           )}
                           {post.externalPostId && (
@@ -1602,12 +1674,12 @@ export function PublisherWorkspace() {
 }
 
 export function AnalyticsWorkspace() {
-  const [metrics, setMetrics] = useState<typeof demoMetrics>([]);
+  const [metrics, setMetrics] = useState<PostMetrics[]>([]);
   useEffect(() => {
     fetch("/api/metrics")
       .then((response) => response.json())
       .then((result) => {
-        if (Array.isArray(result.metrics) && result.metrics.length > 0)
+        if (Array.isArray(result.metrics))
           setMetrics(result.metrics);
       });
   }, []);
@@ -1641,6 +1713,24 @@ export function AnalyticsWorkspace() {
       ),
     ],
   ];
+
+  if (metrics.length === 0) {
+    return (
+      <div className="space-y-5">
+        <section className={`${panelClass} flex min-h-60 flex-col items-center justify-center p-8 text-center`}>
+          <p className="text-sm text-zinc-400">No performance metrics recorded yet.</p>
+          <p className="mt-1 text-xs text-zinc-600">
+            Publish posts in the Publisher workspace to begin ingesting cross-platform engagement metrics.
+          </p>
+          <a
+            href="/publisher"
+            className="mt-4 border border-blue-500 bg-blue-500/10 px-4 py-2 text-xs font-semibold text-blue-200 hover:bg-blue-500/20">
+            Go to Publisher →
+          </a>
+        </section>
+      </div>
+    );
+  }
   return (
     <div className="space-y-5">
       <section className={`${panelClass} overflow-x-auto`}>
@@ -1703,7 +1793,7 @@ export function AnalyticsWorkspace() {
 
 export function InsightsWorkspace() {
   const router = useRouter();
-  const [items, setItems] = useState<typeof demoInsights>([]);
+  const [items, setItems] = useState<Insight[]>([]);
   const [notice, setNotice] = useState("");
   const [campaignId, setCampaignId] = useState("");
   useEffect(() => {
@@ -1802,7 +1892,7 @@ export function InsightsWorkspace() {
 }
 
 export function ReportsWorkspace() {
-  const [report, setReport] = useState<typeof demoReport | null>(null);
+  const [report, setReport] = useState<WeeklyReport | null>(null);
   const [notice, setNotice] = useState("");
   function downloadReport() {
     if (!report) return;

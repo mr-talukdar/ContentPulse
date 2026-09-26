@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { body, jsonError } from "@/app/api/_lib";
-import { demoConcept, demoPosts } from "@/utils/contentpulse/demo-data";
 import { contentStore } from "@/utils/contentpulse/store";
 import { generateWithFallback, parseJson } from "@/utils/ai/gemini-gateway";
 import { campaignPrompt } from "@/utils/contentpulse/prompts/campaign";
@@ -146,27 +145,12 @@ export async function POST(request: Request) {
         });
       }
     } catch (error) {
-      console.error(
-        "Live AI campaign generation failed, falling back to demo data",
-        error,
-      );
+      console.error("Live AI campaign generation failed", error);
+      return jsonError("Live AI campaign generation failed. Please try again.", 502);
     }
+  } else {
+    return jsonError("GEMINI_API_KEY is not configured on the server.", 500);
   }
 
-  // Fallback to demo data if API key missing or AI calls fail
-  contentStore.concepts.set(demoConcept.id, { ...demoConcept, campaignId });
-  const posts = demoPosts.map((post) => ({
-    ...post,
-    campaignId,
-    status: "review" as const,
-  }));
-  for (const post of posts) contentStore.posts.set(post.id, post);
-  contentStore.campaigns.set(campaignId, { ...campaign, status: "active" });
-
-  return NextResponse.json({
-    campaign: contentStore.campaigns.get(campaignId),
-    concept: demoConcept,
-    posts,
-    mode: "demo-fallback",
-  });
+  return jsonError("No posts were generated. Please check your brief parameters.", 422);
 }

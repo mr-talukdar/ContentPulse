@@ -29,6 +29,6 @@ export async function POST(
     campaign,
     concept,
     posts,
-    persistence: repository ? "supabase" : "demo",
+    persistence: repository ? "supabase" : "memory",
   });
 }

@@ -138,7 +138,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (process.env.CONTENTPULSE_DEMO_MODE !== "true") {
+    const isSupabaseConfigured = Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    );
+    if (isSupabaseConfigured) {
       const cookieStore = await cookies();
       const supabase = createClient(cookieStore);
       const projectName = String(formData.get("projectName") || video.name);
