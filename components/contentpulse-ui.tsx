@@ -1,6 +1,12 @@
 "use client";
 
-import { startTransition, useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -527,13 +533,17 @@ export function StudioWorkspace() {
   );
   const [notice, setNotice] = useState("");
   useEffect(() => {
-    const storedBrief = window.sessionStorage.getItem("contentpulse-next-brief");
+    const storedBrief = window.sessionStorage.getItem(
+      "contentpulse-next-brief",
+    );
     if (!storedBrief) return;
     try {
       const brief = JSON.parse(storedBrief);
       startTransition(() => {
         setForm((current) => ({ ...current, ...brief }));
-        setNotice("Next brief loaded from your insight. Review it, then generate.");
+        setNotice(
+          "Next brief loaded from your insight. Review it, then generate.",
+        );
       });
     } catch {
       startTransition(() => setNotice("The next brief could not be loaded."));
@@ -1345,7 +1355,10 @@ export function InsightsWorkspace() {
       body: JSON.stringify({ insightId: id }),
     }).then((res) => res.json());
     if (result.brief) {
-      window.sessionStorage.setItem("contentpulse-next-brief", JSON.stringify(result.brief));
+      window.sessionStorage.setItem(
+        "contentpulse-next-brief",
+        JSON.stringify(result.brief),
+      );
       router.push("/studio");
     } else setNotice("Could not create next brief.");
   }

@@ -44,6 +44,7 @@
 - **Model output normalization fixed**: Added shared hashtag normalization so Gemini string outputs become Postgres `text[]` values before Supabase writes and safe arrays before React `.map()` rendering.
 - **Report output normalization fixed**: Added shared list normalization so report sections remain arrays even when a model returns a single string; provider names were removed from repeated user-facing workflow labels.
 - **Report download added**: Reports now offer a client-side Markdown download containing the summary, learnings, recommendations, period, and source post IDs.
+- **Insight-to-brief loop closed**: Create Next Brief now stores the generated editable brief in session state and routes to Studio, where the brief is prefilled for review and regeneration.
 - **README rewritten**: Replaced the original Problem 1 scaffold README with a complete current ContentPulse product, architecture, API, persistence, authentication, media, setup, demo, validation, and known-gaps guide.
 
 ## Single Source of Truth
