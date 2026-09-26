@@ -1720,9 +1720,10 @@ export function AnalyticsWorkspace() {
       (response) => response.json(),
     );
     if (Array.isArray(result.metrics)) {
-      setMetrics(result.metrics);
+      const publishedPostIds = new Set(posts.map(p => p.id));
+      setMetrics(result.metrics.filter((m: PostMetrics) => publishedPostIds.has(m.postId)));
       setMetricNotice(
-        `Simulated from ${result.metrics.length} published mock-adapter post${result.metrics.length === 1 ? "" : "s"}.`,
+        `Simulated metrics successfully.`,
       );
     } else setMetricNotice(result.error ?? "Metrics could not be ingested.");
   }
