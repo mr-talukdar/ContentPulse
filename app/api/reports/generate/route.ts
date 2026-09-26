@@ -23,8 +23,10 @@ export async function POST() {
 
   if (apiKey) {
     try {
-      const insights = Array.from(contentStore.insights.values());
-      const metrics = Array.from(contentStore.metrics.values());
+      const repository = await getContentRepository();
+      const insights = repository ? await repository.listInsights() : Array.from(contentStore.insights.values());
+      const metrics = repository ? await repository.listMetrics() : Array.from(contentStore.metrics.values());
+      if (!insights.length || !metrics.length) return NextResponse.json({ error: "Generate insights after publishing posts and ingesting metrics." }, { status: 409 });
 
       const promptStr = reportPrompt(insights, metrics);
       const aiResult = await generateWithFallback<ReportGen>(
@@ -60,16 +62,11 @@ export async function POST() {
             aiResult.data.recommendedNextActions,
           ),
         },
-        sourcePostIds: aiResult.data.sourcePostIds || [
-          "IG_001",
-          "YT_001",
-          "FB_001",
-        ],
+        sourcePostIds: (aiResult.data.sourcePostIds || []).filter((id) => metrics.some((metric) => metric.postId === id)),
         createdAt: now.toISOString(),
       };
 
       contentStore.reports.set(report.id, report);
-      const repository = await getContentRepository();
       if (repository) await repository.saveReport(report);
 
       return NextResponse.json({
