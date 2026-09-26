@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { getURL } from "@/utils/get-url";
 
 export function GoogleLogin() {
   const [error, setError] = useState("");
@@ -15,7 +14,7 @@ export function GoogleLogin() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${getURL()}auth/callback?next=/`,
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
       },
     });
     if (authError) {
