@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   demoInsights,
   demoMetrics,
@@ -317,12 +318,54 @@ function PostCard({
 }
 
 export function CommandCenter() {
+  const [campaigns, setCampaigns] = useState<
+    Array<{ id: string; name: string; status: string }>
+  >([]);
+  const [posts, setPosts] = useState<GeneratedPost[]>([]);
+  const [insights, setInsights] = useState<typeof demoInsights>([]);
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/campaigns").then((response) => response.json()),
+      fetch("/api/posts").then((response) => response.json()),
+      fetch("/api/insights").then((response) => response.json()),
+    ]).then(([campaignResult, postResult, insightResult]) => {
+      if (Array.isArray(campaignResult.campaigns))
+        setCampaigns(campaignResult.campaigns);
+      if (Array.isArray(postResult.posts)) setPosts(postResult.posts);
+      if (Array.isArray(insightResult.insights))
+        setInsights(insightResult.insights);
+    });
+  }, []);
   const stats = [
-    ["03", "Active campaigns", "+1 this week", "red"],
-    ["04", "Awaiting approval", "Needs attention", "amber"],
-    ["07", "Scheduled", "Next 48 hours", "blue"],
-    ["18", "Published", "This month", "green"],
+    [
+      String(
+        campaigns.filter((campaign) => campaign.status === "active").length,
+      ),
+      "Active campaigns",
+      "From current workspace",
+      "red",
+    ],
+    [
+      String(posts.filter((post) => post.status === "review").length),
+      "Awaiting approval",
+      "Needs attention",
+      "amber",
+    ],
+    [
+      String(posts.filter((post) => post.status === "scheduled").length),
+      "Scheduled",
+      "Release queue",
+      "blue",
+    ],
+    [
+      String(posts.filter((post) => post.status === "published").length),
+      "Published",
+      "Traceable posts",
+      "green",
+    ],
   ];
+  const latestInsight = insights[0];
+  const topPost = posts.find((post) => post.status === "published") ?? posts[0];
   const steps = [
     "Brief",
     "Generate",
@@ -379,17 +422,23 @@ export function CommandCenter() {
               <p className="text-[10px] font-bold uppercase tracking-[.18em] text-red-400">
                 Top performing concept
               </p>
-              <h2 className="mt-2 text-xl font-semibold">The Signal Returns</h2>
+              <h2 className="mt-2 text-xl font-semibold">
+                {topPost?.title ?? "No published concept yet"}
+              </h2>
             </div>
-            <Tag tone="green">14.6% engagement</Tag>
+            <Tag tone="green">{topPost ? topPost.id : "Awaiting data"}</Tag>
           </div>
           <p className="text-sm leading-6 text-zinc-400">
-            Character-first Bengali creative built around an unanswered question
-            is driving the strongest response.
+            {topPost?.rationale ??
+              "Publish a campaign to see the strongest performing concept here."}
           </p>
           <div className="mt-6 flex gap-2">
-            <PlatformTag platform="instagram" />
-            <Tag>CON_001</Tag>
+            {topPost ? (
+              <PlatformTag platform={topPost.platform} />
+            ) : (
+              <Tag>Pipeline pending</Tag>
+            )}
+            {topPost && <Tag>{topPost.conceptId}</Tag>}
           </div>
         </section>
         <section className={`${panelClass} border-blue-500/30`}>
@@ -397,16 +446,19 @@ export function CommandCenter() {
             Latest AI insight
           </p>
           <h2 className="mt-2 text-xl font-semibold">
-            Native Bengali hooks are leading discovery.
+            {latestInsight?.claim ?? "No insight generated yet"}
           </h2>
           <p className="mt-3 text-sm leading-6 text-zinc-400">
-            Instagram is winning early attention while YouTube captures deeper
-            viewing intent.
+            {latestInsight?.recommendation ??
+              "Generate insights after metrics are available."}
           </p>
           <div className="mt-5 flex items-center justify-between">
             <div className="flex gap-2">
-              <Tag tone="blue">IG_001</Tag>
-              <Tag tone="blue">YT_001</Tag>
+              {latestInsight?.sourcePostIds.map((id) => (
+                <Tag key={id} tone="blue">
+                  {id}
+                </Tag>
+              ))}
             </div>
             <a href="/insights" className="text-xs font-bold text-blue-300">
               Create Next Brief →
@@ -420,19 +472,25 @@ export function CommandCenter() {
           <span className="text-xs text-zinc-600">Today</span>
         </div>
         <div className="divide-y divide-zinc-900">
-          {[
-            ["09:42", "Generated 6 platform variants", "CMP_003", "blue"],
-            ["09:18", "IG_001 approved by Anirban", "Approval queue", "green"],
-            ["08:55", "Weekly metrics ingested", "18 posts", "amber"],
-            ["Yesterday", "Raat Baaki campaign published", "CMP_001", "red"],
-          ].map(([time, text, meta, tone]) => (
+          {posts.slice(0, 4).map((post) => (
             <div
-              key={text}
+              key={post.id}
               className="grid gap-2 py-3 text-sm md:grid-cols-[90px_1fr_140px]">
-              <span className="text-xs text-zinc-600">{time}</span>
-              <span className={toneText[tone]}>{text}</span>
+              <span className="text-xs text-zinc-600">{post.status}</span>
+              <span
+                className={
+                  toneText[
+                    post.status === "published"
+                      ? "green"
+                      : post.status === "review"
+                        ? "amber"
+                        : "blue"
+                  ]
+                }>
+                {post.title ?? post.id}
+              </span>
               <code className="text-xs text-zinc-600 md:text-right">
-                {meta}
+                {post.id}
               </code>
             </div>
           ))}
@@ -443,6 +501,7 @@ export function CommandCenter() {
 }
 
 export function StudioWorkspace() {
+  const router = useRouter();
   const [form, setForm] = useState({
     campaignName: "Raat Baaki: The Signal",
     objective: "Drive anticipation for the next episode reveal.",
@@ -510,7 +569,7 @@ export function StudioWorkspace() {
     const response = await fetch(`/api/campaigns/${campaignId}/commit`, {
       method: "POST",
     });
-    if (response.ok) window.location.assign("/approval");
+    if (response.ok) router.push("/approval");
     else setNotice("Could not save this campaign. Please retry.");
     setCommitBusy(false);
   }
@@ -1136,7 +1195,7 @@ export function PublisherWorkspace() {
 }
 
 export function AnalyticsWorkspace() {
-  const [metrics, setMetrics] = useState(demoMetrics);
+  const [metrics, setMetrics] = useState<typeof demoMetrics>([]);
   useEffect(() => {
     fetch("/api/metrics")
       .then((response) => response.json())
@@ -1145,19 +1204,49 @@ export function AnalyticsWorkspace() {
           setMetrics(result.metrics);
       });
   }, []);
+  const platformFor = (postId: string) =>
+    postId.startsWith("IG")
+      ? "Instagram"
+      : postId.startsWith("YT")
+        ? "YouTube"
+        : "Facebook";
+  const formatNumber = (value?: number) =>
+    value == null ? "—" : value.toLocaleString();
+  const rows = [
+    ["Platform", ...metrics.map((metric) => platformFor(metric.postId))],
+    [
+      "Impressions",
+      ...metrics.map((metric) => formatNumber(metric.impressions)),
+    ],
+    ["Reach", ...metrics.map((metric) => formatNumber(metric.reach))],
+    ["Views", ...metrics.map((metric) => formatNumber(metric.views))],
+    [
+      "Engagement rate",
+      ...metrics.map(
+        (metric) => `${(metric.engagementRate * 100).toFixed(1)}%`,
+      ),
+    ],
+    [
+      "Likes / comments / shares",
+      ...metrics.map(
+        (metric) =>
+          `${formatNumber(metric.likes)} / ${formatNumber(metric.comments)} / ${formatNumber(metric.shares)}`,
+      ),
+    ],
+  ];
   return (
     <div className="space-y-5">
       <section className={`${panelClass} overflow-x-auto`}>
         <div className="mb-6 flex items-start justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-400">
-              CON_001 / The Signal Returns
+              Like-for-like concept comparison
             </p>
             <h2 className="mt-2 text-xl font-semibold">
               Like-for-like performance
             </h2>
           </div>
-          <Tag tone="green">3 posts compared</Tag>
+          <Tag tone="green">{metrics.length} posts compared</Tag>
         </div>
         <table className="w-full min-w-162.5 border-collapse text-left">
           <thead>
@@ -1171,19 +1260,7 @@ export function AnalyticsWorkspace() {
             </tr>
           </thead>
           <tbody>
-            {[
-              ["Platform", "Instagram", "YouTube", "Facebook"],
-              ["Impressions", "42,000", "28,600", "17,300"],
-              ["Reach", "31,800", "24,400", "12,100"],
-              ["Views", "17,600", "19,200", "—"],
-              ["Engagement rate", "14.6%", "10.8%", "12.8%"],
-              [
-                "Likes / comments / shares",
-                "4,800 / 312 / 640",
-                "2,600 / 184 / 310",
-                "1,400 / 220 / 410",
-              ],
-            ].map((row) => (
+            {rows.map((row) => (
               <tr key={row[0]} className="border-b border-zinc-900 text-sm">
                 <th className="py-4 font-medium text-zinc-500">{row[0]}</th>
                 {row.slice(1).map((value, index) => (
@@ -1199,15 +1276,17 @@ export function AnalyticsWorkspace() {
         </table>
       </section>
       <div className="grid gap-4 md:grid-cols-3">
-        {[
-          ["Instagram", "14.6%", "Best discovery", "red"],
-          ["YouTube", "10.8%", "Deepest intent", "blue"],
-          ["Facebook", "12.8%", "Most shares", "amber"],
-        ].map(([name, value, note, tone]) => (
-          <div key={name} className={panelClass}>
-            <span className={`text-xs ${toneText[tone]}`}>{name}</span>
-            <strong className="mt-3 block text-3xl">{value}</strong>
-            <p className="mt-1 text-xs text-zinc-600">{note}</p>
+        {metrics.map((metric) => (
+          <div key={metric.postId} className={panelClass}>
+            <span className="text-xs text-blue-300">
+              {platformFor(metric.postId)}
+            </span>
+            <strong className="mt-3 block text-3xl">
+              {(metric.engagementRate * 100).toFixed(1)}%
+            </strong>
+            <p className="mt-1 text-xs text-zinc-600">
+              {metric.postId} engagement rate
+            </p>
           </div>
         ))}
       </div>
@@ -1216,21 +1295,27 @@ export function AnalyticsWorkspace() {
 }
 
 export function InsightsWorkspace() {
-  const [items, setItems] = useState(demoInsights);
+  const [items, setItems] = useState<typeof demoInsights>([]);
   const [notice, setNotice] = useState("");
+  const [campaignId, setCampaignId] = useState("");
   useEffect(() => {
-    fetch("/api/insights?campaignId=CMP_001")
+    fetch("/api/campaigns")
       .then((response) => response.json())
       .then((result) => {
-        if (Array.isArray(result.insights) && result.insights.length > 0)
-          setItems(result.insights);
+        const firstCampaign = result.campaigns?.[0];
+        if (firstCampaign?.id) setCampaignId(firstCampaign.id);
+      });
+    fetch("/api/insights")
+      .then((response) => response.json())
+      .then((result) => {
+        if (Array.isArray(result.insights)) setItems(result.insights);
       });
   }, []);
   async function generate() {
     const result = await fetch("/api/insights/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ campaignId: "CMP_001" }),
+      body: JSON.stringify({ campaignId }),
     }).then((res) => res.json());
     if (result.insights) {
       setItems(result.insights);
@@ -1264,6 +1349,12 @@ export function InsightsWorkspace() {
       {notice && (
         <div className="border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-200">
           {notice}
+        </div>
+      )}
+      {items.length === 0 && (
+        <div className={`${panelClass} text-sm text-zinc-500`}>
+          No insights yet. Ingest metrics and generate insights from the active
+          campaign.
         </div>
       )}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -1301,9 +1392,10 @@ export function InsightsWorkspace() {
 }
 
 export function ReportsWorkspace() {
-  const [report, setReport] = useState(demoReport);
+  const [report, setReport] = useState<typeof demoReport | null>(null);
   const [notice, setNotice] = useState("");
   function downloadReport() {
+    if (!report) return;
     const sections: Array<[string, string[]]> = [
       ["What Worked", normalizeStringList(report.content.whatWorked)],
       [
@@ -1375,7 +1467,9 @@ export function ReportsWorkspace() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Tag tone="blue">
-            {report.periodStart} → {report.periodEnd}
+            {report
+              ? `${report.periodStart} → ${report.periodEnd}`
+              : "No report yet"}
           </Tag>
           <h2 className="mt-3 text-2xl font-semibold">
             Weekly performance report
@@ -1383,6 +1477,7 @@ export function ReportsWorkspace() {
         </div>
         <div className="flex gap-2">
           <Button
+            disabled={!report}
             onClick={downloadReport}
             className="border-zinc-700 text-zinc-300">
             Download report ↓
@@ -1404,10 +1499,11 @@ export function ReportsWorkspace() {
           Executive summary
         </p>
         <p className="mt-3 max-w-3xl text-lg leading-8 text-zinc-200">
-          {report.content.executiveSummary}
+          {report?.content.executiveSummary ??
+            "Generate a report after insights and metrics are available."}
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          {report.sourcePostIds.map((id) => (
+          {report?.sourcePostIds.map((id) => (
             <Tag key={id}>{id}</Tag>
           ))}
         </div>
@@ -1415,14 +1511,30 @@ export function ReportsWorkspace() {
       <div className="grid gap-4 md:grid-cols-2">
         {(
           [
-            ["What worked", report.content.whatWorked, "green"],
-            ["What underperformed", report.content.whatUnderperformed, "red"],
-            ["Platform learnings", report.content.platformLearnings, "blue"],
-            ["Language learnings", report.content.languageLearnings, "amber"],
-            ["Creative learnings", report.content.creativeLearnings, "blue"],
+            ["What worked", report?.content.whatWorked ?? [], "green"],
+            [
+              "What underperformed",
+              report?.content.whatUnderperformed ?? [],
+              "red",
+            ],
+            [
+              "Platform learnings",
+              report?.content.platformLearnings ?? [],
+              "blue",
+            ],
+            [
+              "Language learnings",
+              report?.content.languageLearnings ?? [],
+              "amber",
+            ],
+            [
+              "Creative learnings",
+              report?.content.creativeLearnings ?? [],
+              "blue",
+            ],
             [
               "Recommended next actions",
-              report.content.recommendedNextActions,
+              report?.content.recommendedNextActions ?? [],
               "red",
             ],
           ] as [string, string[], string][]
