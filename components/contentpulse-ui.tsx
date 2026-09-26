@@ -1757,9 +1757,39 @@ export function AnalyticsWorkspace() {
     ],
   ];
 
-  if (metrics.length === 0) {
-    return (
-      <div className="space-y-5">
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-zinc-400 font-medium">Campaign:</label>
+          <select
+            className="border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200"
+            value={selectedCampaignId}
+            onChange={(e) => setSelectedCampaignId(e.target.value)}>
+            {campaigns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.id})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          {metrics.length > 0 && <Tag tone="green">{metrics.length} posts compared</Tag>}
+          <Button
+            onClick={ingestMetrics}
+            className="border-blue-500 bg-blue-500/10 text-blue-200">
+            Ingest published metrics
+          </Button>
+        </div>
+      </div>
+      
+      {metricNotice && (
+        <div className="border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-200">
+          {metricNotice}
+        </div>
+      )}
+
+      {metrics.length === 0 ? (
         <section
           className={`${panelClass} flex min-h-60 flex-col items-center justify-center p-8 text-center`}>
           <p className="text-sm text-zinc-400">
@@ -1775,30 +1805,19 @@ export function AnalyticsWorkspace() {
             Go to Publisher →
           </a>
         </section>
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-5">
-      <section className={`${panelClass} overflow-x-auto`}>
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-400">
-              Like-for-like concept comparison
-            </p>
-            <h2 className="mt-2 text-xl font-semibold">
-              Like-for-like performance
-            </h2>
+      ) : (
+        <>
+        <section className={`${panelClass} overflow-x-auto`}>
+          <div className="mb-6 flex items-start justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.18em] text-blue-400">
+                Like-for-like concept comparison
+              </p>
+              <h2 className="mt-2 text-xl font-semibold">
+                Like-for-like performance
+              </h2>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Tag tone="green">{metrics.length} posts compared</Tag>
-            <Button
-              onClick={ingestMetrics}
-              className="border-blue-500/50 text-blue-300">
-              Ingest published metrics
-            </Button>
-          </div>
-        </div>
         <div className="mb-4 flex items-center gap-2">
           <Tag tone="amber">source: mock-adapter</Tag>
           {metricNotice && (
@@ -1847,6 +1866,8 @@ export function AnalyticsWorkspace() {
           </div>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }
