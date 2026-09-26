@@ -30,45 +30,56 @@ export async function POST(request: Request) {
 
   try {
     const repository = await getContentRepository();
-    const posts = repository
+    const allPosts = repository
       ? (await repository.listPosts()).filter(
           (post) => post.campaignId === campaignId,
         )
       : Array.from(contentStore.posts.values()).filter(
           (p) => p.campaignId === campaignId,
         );
+    const posts = allPosts.filter((post) => post.status === "published");
     const metrics = repository
       ? await repository.listMetrics()
       : Array.from(contentStore.metrics.values());
 
-    if (!posts.length || !metrics.length) {
+    const evidenceIds = new Set(posts.map((post) => post.id));
+    const evidenceMetrics = metrics.filter((metric) =>
+      evidenceIds.has(metric.postId),
+    );
+    if (!posts.length || !evidenceMetrics.length) {
       return NextResponse.json(
         {
-          error:
-            "Publish posts and ingest metrics before generating insights.",
+          error: "Publish posts and ingest metrics before generating insights.",
         },
         { status: 409 },
       );
     }
 
-    const promptStr = insightsPrompt(posts, metrics);
+    const promptStr = insightsPrompt(posts, evidenceMetrics);
     const aiResult = await generateWithFallback<InsightGen[]>(
       "reasoning",
       promptStr,
       parseJson,
     );
 
-    const generatedInsights: Insight[] = aiResult.data.map((item, idx) => ({
-      id: `INS_${Date.now().toString().slice(-4)}_${idx + 1}`,
-      campaignId,
-      type: item.type,
-      claim: item.claim,
-      recommendation: item.recommendation,
-      sourcePostIds: (item.sourcePostIds || []).filter((id) =>
-        posts.some((post) => post.id === id),
-      ),
-      createdAt: new Date().toISOString(),
-    }));
+    const validTypes = ["strong", "weak", "platform", "language", "creative", "recommendation"];
+    const generatedInsights: Insight[] = aiResult.data.map((item, idx) => {
+      let safeType = String(item.type).toLowerCase();
+      if (!validTypes.includes(safeType)) {
+        safeType = "recommendation";
+      }
+      return {
+        id: `INS_${Date.now().toString().slice(-4)}_${idx + 1}`,
+        campaignId,
+        type: safeType as any,
+        claim: item.claim,
+        recommendation: item.recommendation,
+        sourcePostIds: (item.sourcePostIds || []).filter((id) =>
+          posts.some((post) => post.id === id),
+        ),
+        createdAt: new Date().toISOString(),
+      };
+    });
 
     for (const insight of generatedInsights) {
       contentStore.insights.set(insight.id, insight);
